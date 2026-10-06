@@ -1,86 +1,143 @@
-# Codeable Models
+# CodeableModels
 
-Codeable Models aims to provide an easy-to-use API for coding software design models
-akin to UML models, but radically simplified compared to the UML2 meta-model. That is,
-the API allows you to create metaclasses, classes, objects, stereotypes and their
-dependencies. The main envisaged use case is at the moment to create domain models in
-your code at runtime and generate visual representations of those models for human users.
+CodeableModels is a Python library for programmatically creating software design models
+akin to UML, built on a lightweight and radically simplified meta-model. It lets you define
+metaclasses, classes, objects, stereotypes, associations, and their relationships entirely
+in code — with no external dependencies at runtime.
 
-We use PlantUML and Graphviz in our projects for such visual representations; see folder 
-plant_uml_renderer for simple class and object model renderers. 
+## Features
 
-The folder metamodels contains a couple of example metamodels.
+- **Metaclasses and classes** — define your domain meta-model and instantiate it with classes
+- **Objects** — instances of classes with typed attribute values
+- **Stereotypes** — UML-style stereotype extensions with tagged values
+- **Associations and links** — directed/undirected associations, role names, multiplicities, link objects
+- **Inheritance** — single and multiple inheritance for metaclasses, classes, and stereotypes
+- **Bundles, packages, layers** — group and organize model elements
+- **Enumerations** — typed enum attributes
+- **PlantUML rendering** — generate class and object diagrams via the bundled `plant_uml_renderer` module
+- **Zero runtime dependencies** — the core library uses only the Python standard library
 
-## Getting Started
+## Requirements
 
-As the project introduces fairly standard modeling abstractions, it should be possible
-to get started based on the samples. Detailed examples will be added as the project
-matures. For the time being, search the test cases for use of API elements that are not
-clear from the interfaces.
+- Python 3.10 or newer
 
-### Prerequisites / Installing
+Install development/testing dependencies:
 
-The project - by purpose - only uses plain Python. So there are no requirements
-to get the project up and running.
+```bash
+pip install -r requirements.txt
+```
 
-Nosetest is required for executing the test cases. Find installation instructions under:
-[Nosetest](https://nose.readthedocs.io/en/latest/) 
+## Installation
 
-## Running the tests
+CodeableModels is used as a source import — clone the repository and add it to your Python path:
 
-Execute `nosetests` either in the main directory of the project or in `./tests`. The test files contained in 
-this directory comprise the test suite. 
+```bash
+git clone https://github.com/uzdun/CodeableModels.git
+```
 
-On Unix, please be aware that nosetests does not consider executable files. If running the tests fails, make 
-sure that the scripts in `tests` are not executable, e.g., run: `chmod -x $(find . -name '*.py')` in `tests`.
+Then import directly:
 
-## Building the documentation
+```python
+from codeable_models import CMetaclass, CClass, CObject, CAttribute, CException, CEnum, CStereotype
+```
 
-To build the documentation Sphinx and the extensions configured in `docsrc/source/conf.py`
-need to be installed first, e.g. using `pip`.
+## Quick Start
 
-The documentation is built in the folder `docsrc`. Use `make html` to build the `html` 
-pages into the subfolder `build`, and `make docs` to copy the build into the `docs` folder.
-The distribution contains the latest built of the documentation in the `docs` folder.
+```python
+from codeable_models import CMetaclass, CClass, CObject, CAttribute, CStereotype, CEnum
 
-The documentation can also be found at:
-[Github Pages Documentation](https://uzdun.github.io/CodeableModels/)
+# Define a metaclass (the "type of a class")
+entity = CMetaclass("Entity", attributes={"name": ""})
 
-## Deployment
+# Define a class that conforms to the metaclass
+person = CClass(entity, "Person", attributes={"age": 0})
 
-No specific instructions so far; simply import from the `codeable_models` module like:
+# Instantiate an object
+alice = CObject(person, "Alice", values={"name": "Alice", "age": 30})
+print(alice.get_value("name"))  # "Alice"
+
+# Define an association
+address = CClass(entity, "Address", attributes={"street": "", "city": ""})
+person.association(address, "lives_at", multiplicity="1", source_multiplicity="*")
+
+# Stereotypes
+persistent = CStereotype("Persistent", attributes={"table": ""})
+entity.stereotypes = persistent
+person.stereotype_instances = persistent
+person.set_tagged_value("table", "persons", persistent)
+```
+
+## Running the Tests
+
+```bash
+pytest tests/
+```
+
+Run with verbose output:
+
+```bash
+pytest tests/ -v
+```
+
+## Building the Documentation
+
+Documentation is built with Sphinx. Install the docs dependencies first:
+
+```bash
+pip install -r requirements.txt
+```
+
+Then build from the `docsrc/` directory:
+
+```bash
+cd docsrc
+make html        # build HTML docs into docsrc/build/html/
+make docs        # copy build into the top-level docs/ folder
+```
+
+The latest built documentation is available at:
+[https://uzdun.github.io/CodeableModels/](https://uzdun.github.io/CodeableModels/)
+
+## PlantUML Rendering
+
+The `plant_uml_renderer` module generates PlantUML diagrams from your models.
+It requires the external `plantuml.jar` to be available. Download it from
+[https://plantuml.com/download](https://plantuml.com/download) and configure the path
+in `plant_uml_renderer/plant_uml_generator.py`.
+
+```python
+from plant_uml_renderer import PlantUMLGenerator
+```
+
+See the `samples/` directory for usage examples.
+
+## Project Structure
 
 ```
-from codeable_models import CMetaclass, CClass, CObject, CAttribute, CException, CEnum, CStereotype
-``` 
-
-## Built With
-
-* [Nosetest](https://nose.readthedocs.io/en/latest/) - The test framework used
+codeable_models/          Core modeling API (zero external dependencies)
+  internal/               Internal utilities (commons, stereotype_holders, var_values)
+tests/                    Test suite (35 test files, ~820 tests) — run with pytest
+metamodels/               Example domain metamodels (activity, component, deployment, etc.)
+plant_uml_renderer/       PlantUML class/object diagram renderer
+samples/                  Usage examples with rendered diagrams
+docsrc/                   Sphinx documentation source
+docs/                     Built documentation (served via GitHub Pages)
+```
 
 ## Contributing
 
-Please read [CONTRIBUTING.md] for details on our code of conduct, and the process for
-submitting pull requests to us.
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on the code of conduct and
+the process for submitting pull requests.
 
 ## Versioning
 
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see
-the [tags on this repository](https://github.com/uzdun/CodeableModels/tags).
+This project uses [SemVer](https://semver.org/) for versioning. See the
+[tags on this repository](https://github.com/uzdun/CodeableModels/tags) for available versions.
 
 ## Authors
 
-* **Uwe Zdun** - *Initial work* - [https://github.com/uzdun/](https://github.com/uzdun/)
-
-See also the list of [contributors](https://github.com/uzdun/CodeableModels/contributors) who
-participated in this project.
+- **Uwe Zdun** — initial work — [https://github.com/uzdun/](https://github.com/uzdun/)
 
 ## License
 
-This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE)
-file for details
-
-## Acknowledgments
-
-*
-
+Apache 2.0 — see the [LICENSE](LICENSE) file for details.
