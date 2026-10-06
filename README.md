@@ -20,11 +20,12 @@ in code — with no external dependencies at runtime.
 ## Requirements
 
 - Python 3.10 or newer
+- [uv](https://docs.astral.sh/uv/) for managing the environment and dependencies
 
-Install development/testing dependencies:
+Create the virtual environment and install the development/testing and documentation dependencies:
 
 ```bash
-pip install -r requirements.txt
+uv sync
 ```
 
 ## Installation
@@ -70,29 +71,24 @@ person.set_tagged_value("table", "persons", persistent)
 ## Running the Tests
 
 ```bash
-pytest tests/
+uv run pytest
 ```
 
 Run with verbose output:
 
 ```bash
-pytest tests/ -v
+uv run pytest -v
 ```
 
 ## Building the Documentation
 
-Documentation is built with Sphinx. Install the docs dependencies first:
-
-```bash
-pip install -r requirements.txt
-```
-
-Then build from the `docsrc/` directory:
+Documentation is built with Sphinx. The docs dependencies are installed by `uv sync`.
+Build from the `docsrc/` directory:
 
 ```bash
 cd docsrc
-make html        # build HTML docs into docsrc/build/html/
-make docs        # copy build into the top-level docs/ folder
+uv run make html        # build HTML docs into docsrc/build/html/
+uv run make docs        # copy build into the top-level docs/ folder
 ```
 
 The latest built documentation is available at:
@@ -116,7 +112,7 @@ See the `samples/` directory for usage examples.
 ```
 codeable_models/          Core modeling API (zero external dependencies)
   internal/               Internal utilities (commons, stereotype_holders, var_values)
-tests/                    Test suite (35 test files, ~820 tests) — run with pytest
+tests/                    Test suite (35 test files, ~820 tests) — run with uv run pytest
 metamodels/               Example domain metamodels (activity, component, deployment, etc.)
 plant_uml_renderer/       PlantUML class/object diagram renderer
 samples/                  Usage examples with rendered diagrams
