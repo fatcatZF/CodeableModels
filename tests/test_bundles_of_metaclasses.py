@@ -1,78 +1,75 @@
-import nose
-from nose.tools import ok_, eq_
 
+import pytest
 from codeable_models import CBundle, CMetaclass, CClass, CObject, CAttribute, CException, CEnum
-from tests.testing_commons import exception_expected_
 
 
 class TestBundlesOfMetaclasses:
-    def setup(self):
+    def setup_method(self):
         self.b1 = CBundle("B1")
         self.b2 = CBundle("B2")
 
     def test_metaclass_name_fail(self):
-        try:
+        with pytest.raises(CException) as exc_info:
             # noinspection PyTypeChecker
             CMetaclass(self.b1)
-            exception_expected_()
-        except CException as e:
-            ok_(e.value.startswith("is not a name string: '"))
-            ok_(e.value.endswith(" B1'"))
+        e = exc_info.value
+        assert e.value.startswith("is not a name string: '")
+        assert e.value.endswith(" B1'")
 
     def test_metaclass_defined_bundles(self):
-        eq_(set(self.b1.get_elements()), set())
+        assert set(self.b1.get_elements()) == set()
         m1 = CMetaclass("M1", bundles=self.b1)
-        eq_(set(self.b1.get_elements()), {m1})
+        assert set(self.b1.get_elements()) == {m1}
         m2 = CMetaclass("M2", bundles=[self.b1])
         m3 = CMetaclass("M3", bundles=[self.b1, self.b2])
         cl = CClass(m1, "C", bundles=[self.b1, self.b2])
-        eq_(set(self.b1.get_elements(type=CMetaclass)), {m1, m2, m3})
-        eq_(set(self.b1.elements), {m1, m2, m3, cl})
-        eq_(set(self.b2.get_elements(type=CMetaclass)), {m3})
-        eq_(set(self.b2.elements), {m3, cl})
+        assert set(self.b1.get_elements(type=CMetaclass)) == {m1, m2, m3}
+        assert set(self.b1.elements) == {m1, m2, m3, cl}
+        assert set(self.b2.get_elements(type=CMetaclass)) == {m3}
+        assert set(self.b2.elements) == {m3, cl}
 
     def test_bundle_defined_metaclasses(self):
         m1 = CMetaclass("M1")
         m2 = CMetaclass("M2")
         m3 = CMetaclass("M3")
-        eq_(set(self.b1.get_elements(type=CMetaclass)), set())
+        assert set(self.b1.get_elements(type=CMetaclass)) == set()
         b1 = CBundle("B1", elements=[m1, m2, m3])
-        eq_(set(b1.elements), {m1, m2, m3})
+        assert set(b1.elements) == {m1, m2, m3}
         cl = CClass(m1, "C", bundles=b1)
-        eq_(set(b1.elements), {m1, m2, m3, cl})
-        eq_(set(b1.get_elements(type=CMetaclass)), {m1, m2, m3})
+        assert set(b1.elements) == {m1, m2, m3, cl}
+        assert set(b1.get_elements(type=CMetaclass)) == {m1, m2, m3}
         b2 = CBundle("B2")
         b2.elements = [m2, m3]
-        eq_(set(b2.get_elements(type=CMetaclass)), {m2, m3})
-        eq_(set(m1.bundles), {b1})
-        eq_(set(m2.bundles), {b1, b2})
-        eq_(set(m3.bundles), {b1, b2})
+        assert set(b2.get_elements(type=CMetaclass)) == {m2, m3}
+        assert set(m1.bundles) == {b1}
+        assert set(m2.bundles) == {b1, b2}
+        assert set(m3.bundles) == {b1, b2}
 
     def test_get_metaclasses_by_name(self):
-        eq_(set(self.b1.get_elements(type=CMetaclass, name="m1")), set())
+        assert set(self.b1.get_elements(type=CMetaclass, name="m1")) == set()
         m1 = CMetaclass("M1", bundles=self.b1)
         c1 = CClass(m1, "C1", bundles=self.b1)
-        eq_(self.b1.get_elements(type=CClass), [c1])
-        eq_(set(self.b1.get_elements(type=CMetaclass, name="M1")), {m1})
+        assert self.b1.get_elements(type=CClass) == [c1]
+        assert set(self.b1.get_elements(type=CMetaclass, name="M1")) == {m1}
         m2 = CMetaclass("M1", bundles=self.b1)
-        eq_(set(self.b1.get_elements(type=CMetaclass, name="M1")), {m1, m2})
-        ok_(m1 != m2)
+        assert set(self.b1.get_elements(type=CMetaclass, name="M1")) == {m1, m2}
+        assert m1 != m2
         m3 = CMetaclass("M1", bundles=self.b1)
-        eq_(set(self.b1.get_elements(type=CMetaclass, name="M1")), {m1, m2, m3})
-        eq_(self.b1.get_element(type=CMetaclass, name="M1"), m1)
+        assert set(self.b1.get_elements(type=CMetaclass, name="M1")) == {m1, m2, m3}
+        assert self.b1.get_element(type=CMetaclass, name="M1") == m1
 
     def test_get_metaclass_elements_by_name(self):
-        eq_(set(self.b1.get_elements(name="M1")), set())
+        assert set(self.b1.get_elements(name="M1")) == set()
         m1 = CMetaclass("M1", bundles=self.b1)
-        eq_(set(self.b1.get_elements(name="M1")), {m1})
+        assert set(self.b1.get_elements(name="M1")) == {m1}
         c1 = CClass(m1, "M1", bundles=self.b1)
-        eq_(set(self.b1.get_elements(name="M1")), {m1, c1})
+        assert set(self.b1.get_elements(name="M1")) == {m1, c1}
         m2 = CMetaclass("M1", bundles=self.b1)
-        eq_(set(self.b1.get_elements(name="M1")), {m1, c1, m2})
-        ok_(m1 != m2)
+        assert set(self.b1.get_elements(name="M1")) == {m1, c1, m2}
+        assert m1 != m2
         m3 = CMetaclass("M1", bundles=self.b1)
-        eq_(set(self.b1.get_elements(name="M1")), {m1, c1, m2, m3})
-        eq_(self.b1.get_element(name="M1"), m1)
+        assert set(self.b1.get_elements(name="M1")) == {m1, c1, m2, m3}
+        assert self.b1.get_element(name="M1") == m1
 
     def test_metaclass_defined_bundle_change(self):
         m1 = CMetaclass("M1", bundles=self.b1)
@@ -84,26 +81,26 @@ class TestBundlesOfMetaclasses:
         m2.bundles = b
         m3.bundles = None
         cl2.bundles = b
-        eq_(set(self.b1.elements), {cl1, m1})
-        eq_(set(self.b1.get_elements(type=CMetaclass)), {m1})
-        eq_(set(b.elements), {m2, cl2})
-        eq_(set(b.get_elements(type=CMetaclass)), {m2})
-        eq_(m1.bundles, [self.b1])
-        eq_(m2.bundles, [b])
-        eq_(m3.bundles, [])
+        assert set(self.b1.elements) == {cl1, m1}
+        assert set(self.b1.get_elements(type=CMetaclass)) == {m1}
+        assert set(b.elements) == {m2, cl2}
+        assert set(b.get_elements(type=CMetaclass)) == {m2}
+        assert m1.bundles == [self.b1]
+        assert m2.bundles == [b]
+        assert m3.bundles == []
 
     def test_bundle_delete_metaclass(self):
         m1 = CMetaclass("M1", bundles=self.b1)
         c = CClass(m1)
-        eq_(m1.classes, [c])
+        assert m1.classes == [c]
         m2 = CMetaclass("M2", bundles=self.b1)
         m3 = CMetaclass("M3", bundles=self.b1)
         self.b1.delete()
-        eq_(set(self.b1.elements), set())
-        eq_(m1.bundles, [])
-        eq_(m1.classes, [c])
-        eq_(m2.bundles, [])
-        eq_(m3.bundles, [])
+        assert set(self.b1.elements) == set()
+        assert m1.bundles == []
+        assert m1.classes == [c]
+        assert m2.bundles == []
+        assert m3.bundles == []
 
     def test_creation_of_unnamed_metaclass_in_bundle(self):
         m1 = CMetaclass()
@@ -111,33 +108,30 @@ class TestBundlesOfMetaclasses:
         m3 = CMetaclass("x")
         cl = CClass(m1)
         self.b1.elements = [m1, m2, m3, cl]
-        eq_(set(self.b1.get_elements(type=CMetaclass)), {m1, m2, m3})
-        eq_(self.b1.get_element(name=None), m1)
-        eq_(set(self.b1.get_elements(type=CMetaclass, name=None)), {m1, m2})
-        eq_(set(self.b1.get_elements(name=None)), {m1, m2, cl})
+        assert set(self.b1.get_elements(type=CMetaclass)) == {m1, m2, m3}
+        assert self.b1.get_element(name=None) == m1
+        assert set(self.b1.get_elements(type=CMetaclass, name=None)) == {m1, m2}
+        assert set(self.b1.get_elements(name=None)) == {m1, m2, cl}
 
     def test_remove_metaclass_from_bundle(self):
         b1 = CBundle("B1")
         b2 = CBundle("B2")
         m1 = CMetaclass("M1", bundles=b1)
-        try:
+        with pytest.raises(CException) as exc_info:
             # noinspection PyTypeChecker
             b1.remove(None)
-            exception_expected_()
-        except CException as e:
-            eq_("'None' is not an element of the bundle", e.value)
-        try:
+        e = exc_info.value
+        assert "'None' is not an element of the bundle" == e.value
+        with pytest.raises(CException) as exc_info:
             b1.remove(CEnum("A"))
-            exception_expected_()
-        except CException as e:
-            eq_("'A' is not an element of the bundle", e.value)
-        try:
+        e = exc_info.value
+        assert "'A' is not an element of the bundle" == e.value
+        with pytest.raises(CException) as exc_info:
             b2.remove(m1)
-            exception_expected_()
-        except CException as e:
-            eq_("'M1' is not an element of the bundle", e.value)
+        e = exc_info.value
+        assert "'M1' is not an element of the bundle" == e.value
         b1.remove(m1)
-        eq_(set(b1.get_elements(type=CMetaclass)), set())
+        assert set(b1.get_elements(type=CMetaclass)) == set()
 
         m1 = CMetaclass("M1", bundles=b1)
         m2 = CMetaclass("M1", bundles=b1)
@@ -145,71 +139,69 @@ class TestBundlesOfMetaclasses:
         c = CClass(m3, bundles=b1)
 
         b1.remove(m1)
-        try:
+        with pytest.raises(CException) as exc_info:
             b1.remove(CMetaclass("M2", bundles=b2))
-            exception_expected_()
-        except CException as e:
-            eq_("'M2' is not an element of the bundle", e.value)
-        try:
+        e = exc_info.value
+        assert "'M2' is not an element of the bundle" == e.value
+        with pytest.raises(CException) as exc_info:
             b1.remove(m1)
-            exception_expected_()
-        except CException as e:
-            eq_("'M1' is not an element of the bundle", e.value)
+        e = exc_info.value
+        assert "'M1' is not an element of the bundle" == e.value
 
-        eq_(set(b1.get_elements(type=CMetaclass)), {m2, m3})
+        assert set(b1.get_elements(type=CMetaclass)) == {m2, m3}
         b1.remove(m3)
-        eq_(set(b1.get_elements(type=CMetaclass)), {m2})
+        assert set(b1.get_elements(type=CMetaclass)) == {m2}
 
-        eq_(m3.superclasses, [m2])
-        eq_(m2.subclasses, [m3])
-        eq_(m3.attribute_names, ["i"])
-        eq_(m3.classes, [c])
-        eq_(m3.name, "M1")
-        eq_(m3.bundles, [])
-        eq_(b1.get_elements(type=CClass), [c])
+        assert m3.superclasses == [m2]
+        assert m2.subclasses == [m3]
+        assert m3.attribute_names == ["i"]
+        assert m3.classes == [c]
+        assert m3.name == "M1"
+        assert m3.bundles == []
+        assert b1.get_elements(type=CClass) == [c]
 
     def test_delete_metaclass_from_bundle(self):
         b1 = CBundle("B1")
         CBundle("B2")
         m1 = CMetaclass("M1", bundles=b1)
         m1.delete()
-        eq_(set(b1.get_elements(type=CMetaclass)), set())
+        assert set(b1.get_elements(type=CMetaclass)) == set()
 
         m1 = CMetaclass("M1", bundles=b1)
         m2 = CMetaclass("M1", bundles=b1)
         m3 = CMetaclass("M1", superclasses=m2, attributes={"i": 1}, bundles=b1)
         CClass(m3, bundles=b1)
         m1.delete()
-        eq_(set(b1.get_elements(type=CMetaclass)), {m2, m3})
+        assert set(b1.get_elements(type=CMetaclass)) == {m2, m3}
         m3.delete()
-        eq_(set(b1.get_elements(type=CMetaclass)), {m2})
+        assert set(b1.get_elements(type=CMetaclass)) == {m2}
 
-        eq_(m3.superclasses, [])
-        eq_(m2.subclasses, [])
-        eq_(m3.attributes, [])
-        eq_(m3.attribute_names, [])
-        eq_(m3.classes, [])
-        eq_(m3.name, None)
-        eq_(m3.bundles, [])
-        eq_(b1.get_elements(type=CClass), [])
+        assert m3.superclasses == []
+        assert m2.subclasses == []
+        assert m3.attributes == []
+        assert m3.attribute_names == []
+        assert m3.classes == []
+        assert m3.name == None
+        assert m3.bundles == []
+        assert b1.get_elements(type=CClass) == []
 
     def test_remove_bundle_from_two_bundles(self):
         b1 = CBundle("B1")
         b2 = CBundle("B2")
         m1 = CMetaclass("m1", bundles=[b1, b2])
         b1.remove(m1)
-        eq_(set(b1.get_elements(type=CMetaclass)), set())
-        eq_(set(b2.get_elements(type=CMetaclass)), {m1})
-        eq_(set(m1.bundles), {b2})
+        assert set(b1.get_elements(type=CMetaclass)) == set()
+        assert set(b2.get_elements(type=CMetaclass)) == {m1}
+        assert set(m1.bundles) == {b2}
 
     def test_delete_bundle_from_two_bundles(self):
         b1 = CBundle("B1")
         b2 = CBundle("B2")
         m1 = CMetaclass("m1", bundles=[b1, b2])
         b1.delete()
-        eq_(set(b1.get_elements(type=CMetaclass)), set())
-        eq_(set(b2.get_elements(type=CMetaclass)), {m1})
-        eq_(set(m1.bundles), {b2})
+        assert set(b1.get_elements(type=CMetaclass)) == set()
+        assert set(b2.get_elements(type=CMetaclass)) == {m1}
+        assert set(m1.bundles) == {b2}
 
     def test_delete_metaclass_having_two_bundles(self):
         b1 = CBundle("B1")
@@ -217,10 +209,10 @@ class TestBundlesOfMetaclasses:
         m1 = CMetaclass("m1", bundles=[b1, b2])
         m2 = CMetaclass("m2", bundles=[b2])
         m1.delete()
-        eq_(set(b1.get_elements(type=CMetaclass)), set())
-        eq_(set(b2.get_elements(type=CMetaclass)), {m2})
-        eq_(set(m1.bundles), set())
-        eq_(set(m2.bundles), {b2})
+        assert set(b1.get_elements(type=CMetaclass)) == set()
+        assert set(b2.get_elements(type=CMetaclass)) == {m2}
+        assert set(m1.bundles) == set()
+        assert set(m2.bundles) == {b2}
 
     def test_delete_class_that_is_an_attribute_type(self):
         b1 = CBundle("B1")
@@ -235,58 +227,48 @@ class TestBundlesOfMetaclasses:
         c = CClass(m)
         cl1.delete()
         cl3.delete()
-        try:
+        with pytest.raises(CException) as exc_info:
             # we just use list here, in order to not get a warning that ea1.default has no effect
             list([ea1.default])
-            exception_expected_()
-        except CException as e:
-            eq_("cannot access named element that has been deleted", e.value)
-        try:
+        e = exc_info.value
+        assert "cannot access named element that has been deleted" == e.value
+        with pytest.raises(CException) as exc_info:
             # we just use list here, in order to not get a warning that ea1.type has no effect
             list([ea1.type])
-            exception_expected_()
-        except CException as e:
-            eq_("cannot access named element that has been deleted", e.value)
-        try:
+        e = exc_info.value
+        assert "cannot access named element that has been deleted" == e.value
+        with pytest.raises(CException) as exc_info:
             ea1.default = "3"
-            exception_expected_()
-        except CException as e:
-            eq_("cannot access named element that has been deleted", e.value)
-        try:
+        e = exc_info.value
+        assert "cannot access named element that has been deleted" == e.value
+        with pytest.raises(CException) as exc_info:
             ea1.type = cl1
-            exception_expected_()
-        except CException as e:
-            eq_("cannot access named element that has been deleted", e.value)
-        try:
+        e = exc_info.value
+        assert "cannot access named element that has been deleted" == e.value
+        with pytest.raises(CException) as exc_info:
             ea1.type = cl2
-            exception_expected_()
-        except CException as e:
-            eq_("default value '' incompatible with attribute's type 'CL2'", e.value)
-        try:
+        e = exc_info.value
+        assert "default value '' incompatible with attribute's type 'CL2'" == e.value
+        with pytest.raises(CException) as exc_info:
             c.set_value("o", CObject(cl2))
-            exception_expected_()
-        except CException as e:
-            eq_("cannot access named element that has been deleted", e.value)
-        try:
+        e = exc_info.value
+        assert "cannot access named element that has been deleted" == e.value
+        with pytest.raises(CException) as exc_info:
             c.get_value("o")
-            exception_expected_()
-        except CException as e:
-            eq_("cannot access named element that has been deleted", e.value)
+        e = exc_info.value
+        assert "cannot access named element that has been deleted" == e.value
 
     def test_bundle_that_is_deleted(self):
         b1 = CBundle("B1")
         b1.delete()
-        try:
+        with pytest.raises(CException) as exc_info:
             CMetaclass("M", bundles=b1)
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "cannot access named element that has been deleted")
+        e = exc_info.value
+        assert e.value == "cannot access named element that has been deleted"
 
     def test_set_bundle_to_none(self):
         c = CMetaclass("M", bundles=None)
-        eq_(c.bundles, [])
-        eq_(c.name, "M")
+        assert c.bundles == []
+        assert c.name == "M"
 
 
-if __name__ == "__main__":
-    nose.main()

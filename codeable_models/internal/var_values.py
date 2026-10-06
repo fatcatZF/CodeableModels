@@ -32,6 +32,8 @@ def _get_and_check_var_classifier(_self, class_path, var_name, value_kind, class
         raise _get_var_unknown_exception(value_kind, _self, var_name)
     else:
         # check only on specified classifier
+        if value_kind == VarValueKind.TAGGED_VALUE and classifier not in class_path and not classifier.is_deleted:
+            raise CException(f"stereotype '{classifier!s}' is not a stereotype of element")
         attribute = classifier.get_attribute(var_name)
         if attribute is None:
             raise _get_var_unknown_exception(value_kind, classifier, var_name)

@@ -1,13 +1,11 @@
-import nose
-from nose.tools import eq_
 
+import pytest
 from codeable_models import CMetaclass, CClass, CException, set_links, add_links, CObject, CStereotype, CBundle
 from codeable_models.internal.commons import get_links
-from tests.testing_commons import exception_expected_
 
 
 class TestLinkObjectsForMetaclasses:
-    def setup(self):
+    def setup_method(self):
         self.mcl = CMetaclass("MCL")
 
     def test_reference_to_link(self):
@@ -30,35 +28,33 @@ class TestLinkObjectsForMetaclasses:
 
         code_links = add_links({source_1: [code_a1, code_b2, code_b1, a_b_links[0], a_b_links[1]]},
                                role_name="contained_code")
-        eq_(len(code_links), 5)
+        assert len(code_links) == 5
 
         # test getter methods on class
-        eq_(set(source_1.get_linked(role_name="contained_code")),
-            {code_a1, code_b2, code_b1, a_b_links[0], a_b_links[1]})
-        eq_(set(source_1.linked), {code_a1, code_b2, code_b1, a_b_links[0], a_b_links[1]})
-        eq_(set(source_1.links), set(code_links))
-        eq_(set(source_1.get_links_for_association(code_association)), set(code_links))
-        eq_(set(get_links([source_1])), set(code_links))
+        assert set(source_1.get_linked(role_name="contained_code")) == {code_a1, code_b2, code_b1, a_b_links[0], a_b_links[1]}
+        assert set(source_1.linked) == {code_a1, code_b2, code_b1, a_b_links[0], a_b_links[1]}
+        assert set(source_1.links) == set(code_links)
+        assert set(source_1.get_links_for_association(code_association)) == set(code_links)
+        assert set(get_links([source_1])) == set(code_links)
 
         # test getter methods on link
-        eq_(a_b_links[0].get_linked(role_name="source"), [source_1])
-        eq_(a_b_links[0].linked, [source_1])
-        eq_(a_b_links[0].links, [code_links[3]])
-        eq_(a_b_links[0].get_links_for_association(code_association), [code_links[3]])
-        eq_(set(get_links([a_b_links[0]])), {code_links[3]})
-        eq_(set(get_links([code_a1, a_b_links[0], a_b_links[1]])),
-            {code_links[0], a_b_links[0], a_b_links[1], code_links[3], code_links[4]})
+        assert a_b_links[0].get_linked(role_name="source") == [source_1]
+        assert a_b_links[0].linked == [source_1]
+        assert a_b_links[0].links == [code_links[3]]
+        assert a_b_links[0].get_links_for_association(code_association) == [code_links[3]]
+        assert set(get_links([a_b_links[0]])) == {code_links[3]}
+        assert set(get_links([code_a1, a_b_links[0], a_b_links[1]])) == {code_links[0], a_b_links[0], a_b_links[1], code_links[3], code_links[4]}
 
         # test add/delete links
         code_b3_link = code_a1.add_links(code_b3)[0]
         source_1.add_links(code_b3_link)
-        eq_(set(code_a1.linked), {code_b1, code_b2, source_1, code_b3})
-        eq_(set(source_1.linked), {code_a1, code_b2, code_b1, a_b_links[0], a_b_links[1], code_b3_link})
-        eq_(code_b3_link.linked, [source_1])
+        assert set(code_a1.linked) == {code_b1, code_b2, source_1, code_b3}
+        assert set(source_1.linked) == {code_a1, code_b2, code_b1, a_b_links[0], a_b_links[1], code_b3_link}
+        assert code_b3_link.linked == [source_1]
         a_b_links[1].delete_links([source_1])
-        eq_(set(source_1.linked), {code_a1, code_b2, code_b1, a_b_links[0], code_b3_link})
+        assert set(source_1.linked) == {code_a1, code_b2, code_b1, a_b_links[0], code_b3_link}
         source_1.delete_links([code_a1, a_b_links[0]])
-        eq_(set(source_1.linked), {code_b2, code_b1, code_b3_link})
+        assert set(source_1.linked) == {code_b2, code_b1, code_b3_link}
 
         # test whether class links fail on metaclass
         cl_a = CClass(self.mcl, "CLA")
@@ -69,11 +65,10 @@ class TestLinkObjectsForMetaclasses:
         o_b = CObject(cl_a, "ob")
         object_link = add_links({o_a: [o_b]}, association=cl_association)[0]
 
-        try:
+        with pytest.raises(CException) as exc_info:
             add_links({source_1: [code_a1, code_b2, code_b1, object_link]}, role_name="contained_code")
-            exception_expected_()
-        except CException as e:
-            eq_("link target is an object link, but source is a class", e.value)
+        e = exc_info.value
+        assert "link target is an object link, but source is a class" == e.value
 
     def test_link_association_has_a_compatible_superclass(self):
         code = CMetaclass("Code")
@@ -92,20 +87,18 @@ class TestLinkObjectsForMetaclasses:
         code_b2 = CClass(code_b, "code_b2")
         links = add_links({code_a1: [code_b1, code_b2]}, association=a_b_association)
 
-        try:
+        with pytest.raises(CException) as exc_info:
             add_links({source_1: [code_a1, code_b2, code_b1, links[0], links[1]]},
                       role_name="contained_code")
-            exception_expected_()
-        except CException as e:
-            eq_("the metaclass link's association is missing a compatible classifier", e.value)
+        e = exc_info.value
+        assert "the metaclass link's association is missing a compatible classifier" == e.value
 
         a_b_association.superclasses = self.mcl
-        try:
+        with pytest.raises(CException) as exc_info:
             add_links({source_1: [code_a1, code_b2, code_b1, links[0], links[1]]},
                       role_name="contained_code")
-            exception_expected_()
-        except CException as e:
-            eq_("no common metaclass for classes or links found", e.value)
+        e = exc_info.value
+        assert "no common metaclass for classes or links found" == e.value
 
         a_b_association.superclasses = code_b
         add_links({source_1: [code_a1, code_b2, code_b1, links[0], links[1]]},
@@ -116,11 +109,10 @@ class TestLinkObjectsForMetaclasses:
         cla = CMetaclass("A")
         clb = CMetaclass("B")
         a_b_association = cla.association(clb, "a_b: [a] * -> [b] *")
-        try:
+        with pytest.raises(CException) as exc_info:
             clx.association(a_b_association, "[x] * -> [a_b_association] *")
-            exception_expected_()
-        except CException as e:
-            eq_("metaclass 'X' is not compatible with association target 'a_b'", e.value)
+        e = exc_info.value
+        assert "metaclass 'X' is not compatible with association target 'a_b'" == e.value
 
     def test_link_to_link(self):
         collection1 = CMetaclass("Collection1")
@@ -151,29 +143,26 @@ class TestLinkObjectsForMetaclasses:
                                       a_b_links[1]: [c1, c2, d1, c_d_links[1], c_d_links[0]],
                                       a_d_links[0]: [a_d_links[0], c_d_links[1], c1, d1]}, role_name="referenced")
 
-        eq_(set(a_b_links[0].get_linked(role_name="referenced")),
-            {c_d_links[0]})
-        eq_(set(a_b_links[0].linked), {c_d_links[0]})
-        eq_(set(a_b_links[0].links), {references_links[0]})
-        eq_(set(a_b_links[0].get_links_for_association(collections_association)), {references_links[0]})
-        eq_(set(get_links([a_b_links[0]])), {references_links[0]})
+        assert set(a_b_links[0].get_linked(role_name="referenced")) == {c_d_links[0]}
+        assert set(a_b_links[0].linked) == {c_d_links[0]}
+        assert set(a_b_links[0].links) == {references_links[0]}
+        assert set(a_b_links[0].get_links_for_association(collections_association)) == {references_links[0]}
+        assert set(get_links([a_b_links[0]])) == {references_links[0]}
 
-        eq_(set(a_b_links[1].get_linked(role_name="referenced")),
-            {c1, c2, d1, c_d_links[1], c_d_links[0]})
-        eq_(set(a_b_links[1].linked), {c1, c2, d1, c_d_links[1], c_d_links[0]})
+        assert set(a_b_links[1].get_linked(role_name="referenced")) == {c1, c2, d1, c_d_links[1], c_d_links[0]}
+        assert set(a_b_links[1].linked) == {c1, c2, d1, c_d_links[1], c_d_links[0]}
         correct_links_set = {references_links[1], references_links[2], references_links[3], references_links[4],
                              references_links[5]}
-        eq_(set(a_b_links[1].links), correct_links_set)
-        eq_(set(a_b_links[1].get_links_for_association(collections_association)), correct_links_set)
-        eq_(set(get_links([a_b_links[1]])), correct_links_set)
+        assert set(a_b_links[1].links) == correct_links_set
+        assert set(a_b_links[1].get_links_for_association(collections_association)) == correct_links_set
+        assert set(get_links([a_b_links[1]])) == correct_links_set
 
-        eq_(set(a_d_links[0].get_linked(role_name="referenced")),
-            {a_d_links[0], c_d_links[1], c1, d1})
-        eq_(set(a_d_links[0].linked), {a_d_links[0], c_d_links[1], c1, d1})
+        assert set(a_d_links[0].get_linked(role_name="referenced")) == {a_d_links[0], c_d_links[1], c1, d1}
+        assert set(a_d_links[0].linked) == {a_d_links[0], c_d_links[1], c1, d1}
         correct_links_set = {references_links[6], references_links[7], references_links[8], references_links[9]}
-        eq_(set(a_d_links[0].links), correct_links_set)
-        eq_(set(a_d_links[0].get_links_for_association(collections_association)), correct_links_set)
-        eq_(set(get_links([a_d_links[0]])), correct_links_set)
+        assert set(a_d_links[0].links) == correct_links_set
+        assert set(a_d_links[0].get_links_for_association(collections_association)) == correct_links_set
+        assert set(get_links([a_d_links[0]])) == correct_links_set
 
     def test_links_as_attribute_values(self):
         code = CMetaclass("Code")
@@ -198,37 +187,34 @@ class TestLinkObjectsForMetaclasses:
         })
         collection = CClass(collection_type)
 
-        eq_(collection.get_value("primary_code"), None)
-        eq_(collection.get_value("default_value_code"), a_b_links[0])
-        eq_(collection.get_value("codes"), None)
-        eq_(collection.get_value("default_values_list"), links_list)
+        assert collection.get_value("primary_code") == None
+        assert collection.get_value("default_value_code") == a_b_links[0]
+        assert collection.get_value("codes") == None
+        assert collection.get_value("default_values_list") == links_list
 
         collection.set_value("primary_code", a_b_links[1])
         collection.set_value("default_value_code", a_b_links[1])
         collection.set_value("codes", [code_a1, a_b_links[0]])
         collection.set_value("default_values_list", [a_b_links[0], a_b_links[1]])
 
-        eq_(collection.get_value("primary_code"), a_b_links[1])
-        eq_(collection.get_value("default_value_code"), a_b_links[1])
-        eq_(collection.get_value("codes"), [code_a1, a_b_links[0]])
-        eq_(collection.get_value("default_values_list"), [a_b_links[0], a_b_links[1]])
+        assert collection.get_value("primary_code") == a_b_links[1]
+        assert collection.get_value("default_value_code") == a_b_links[1]
+        assert collection.get_value("codes") == [code_a1, a_b_links[0]]
+        assert collection.get_value("default_values_list") == [a_b_links[0], a_b_links[1]]
 
         collection.values = {'default_values_list': [a_b_links[0]], "codes": []}
 
-        eq_(collection.values, {'default_value_code': a_b_links[1],
-                                'default_values_list': [a_b_links[0]],
-                                'codes': [],
-                                'primary_code': a_b_links[1]})
+        assert collection.values == {'default_value_code': a_b_links[1], 'default_values_list': [a_b_links[0]], 'codes': [], 'primary_code': a_b_links[1]}
 
         collection.delete_value("primary_code")
         collection.delete_value("default_value_code")
         collection.delete_value("codes")
         collection.delete_value("default_values_list")
 
-        eq_(collection.get_value("primary_code"), None)
-        eq_(collection.get_value("default_value_code"), None)
-        eq_(collection.get_value("codes"), None)
-        eq_(collection.get_value("default_values_list"), None)
+        assert collection.get_value("primary_code") == None
+        assert collection.get_value("default_value_code") == None
+        assert collection.get_value("codes") == None
+        assert collection.get_value("default_values_list") == None
 
     def create_simple_link_object_test_setup(self):
         self.a = CMetaclass("A")
@@ -248,217 +234,199 @@ class TestLinkObjectsForMetaclasses:
 
     def test_attributes_on_association_classifier(self):
         self.create_simple_link_object_test_setup()
-        eq_(self.b_a_association.attributes, [])
-        eq_(self.b_a_association.attribute_names, [])
-        try:
+        assert self.b_a_association.attributes == []
+        assert self.b_a_association.attribute_names == []
+        with pytest.raises(CException) as exc_info:
             self.b_a_association.attributes = {
                 "i1": int,
                 "i2": 15,
                 "s1": str,
                 "s2": "abc"
             }
-            exception_expected_()
-        except CException as e:
-            eq_("setting of attributes not supported for associations", e.value)
+        e = exc_info.value
+        assert "setting of attributes not supported for associations" == e.value
 
-        eq_(self.b_a_association.get_attribute("i1"), None)
+        assert self.b_a_association.get_attribute("i1") == None
 
     def test_superclass_sub_class_method_on_association_classifier(self):
         self.create_simple_link_object_test_setup()
-        eq_(self.a_association.superclasses, [self.a])
-        eq_(self.a_association.subclasses, [])
-        eq_(self.b_a_association.superclasses, [])
-        eq_(self.b_a_association.subclasses, [])
-        eq_(self.a.subclasses, [self.a1, self.a2, self.a_association])
+        assert self.a_association.superclasses == [self.a]
+        assert self.a_association.subclasses == []
+        assert self.b_a_association.superclasses == []
+        assert self.b_a_association.subclasses == []
+        assert self.a.subclasses == [self.a1, self.a2, self.a_association]
 
-        try:
+        with pytest.raises(CException) as exc_info:
             another_sc = CClass(self.mcl, "ASC")
             self.a_association.superclasses = [self.a, another_sc]
-            exception_expected_()
-        except CException as e:
-            eq_("cannot add superclass 'ASC': not a metaclass or metaclass association", e.value)
+        e = exc_info.value
+        assert "cannot add superclass 'ASC': not a metaclass or metaclass association" == e.value
 
-        try:
+        with pytest.raises(CException) as exc_info:
             another_sc = CStereotype("ASC")
             self.a_association.superclasses = [self.a, another_sc]
-            exception_expected_()
-        except CException as e:
-            eq_("cannot add superclass 'ASC': not a metaclass or metaclass association", e.value)
+        e = exc_info.value
+        assert "cannot add superclass 'ASC': not a metaclass or metaclass association" == e.value
 
         another_sc = CMetaclass("ASC")
         self.a_association.superclasses = [self.a, another_sc]
-        eq_(self.a_association.superclasses, [self.a, another_sc])
-        eq_(set(self.a_association.all_superclasses), {self.a, another_sc})
+        assert self.a_association.superclasses == [self.a, another_sc]
+        assert set(self.a_association.all_superclasses) == {self.a, another_sc}
 
         a2_association = self.a1.association(self.a2, "[a1] * -> [a2] *", superclasses=self.a)
         self.a_association.superclasses = [a2_association]
-        eq_(self.a_association.superclasses, [a2_association])
-        eq_(self.a_association.all_subclasses, set())
-        eq_(self.a_association.all_superclasses, {a2_association, self.a})
-        eq_(a2_association.superclasses, [self.a])
-        eq_(a2_association.subclasses, [self.a_association])
-        eq_(a2_association.all_subclasses, {self.a_association})
+        assert self.a_association.superclasses == [a2_association]
+        assert self.a_association.all_subclasses == set()
+        assert self.a_association.all_superclasses == {a2_association, self.a}
+        assert a2_association.superclasses == [self.a]
+        assert a2_association.subclasses == [self.a_association]
+        assert a2_association.all_subclasses == {self.a_association}
 
-        eq_(a2_association.has_subclass(self.a_association), True)
-        eq_(a2_association.has_subclass(self.a1), False)
-        eq_(a2_association.has_superclass(self.a_association), False)
-        eq_(a2_association.has_superclass(self.a), True)
+        assert a2_association.has_subclass(self.a_association) == True
+        assert a2_association.has_subclass(self.a1) == False
+        assert a2_association.has_superclass(self.a_association) == False
+        assert a2_association.has_superclass(self.a) == True
 
-        eq_(self.a_association.is_classifier_of_type(self.a_association), True)
-        eq_(self.a_association.is_classifier_of_type(a2_association), True)
-        eq_(self.a_association.is_classifier_of_type(self.a), True)
-        eq_(self.a_association.is_classifier_of_type(self.a1), False)
+        assert self.a_association.is_classifier_of_type(self.a_association) == True
+        assert self.a_association.is_classifier_of_type(a2_association) == True
+        assert self.a_association.is_classifier_of_type(self.a) == True
+        assert self.a_association.is_classifier_of_type(self.a1) == False
 
         # test linking still works after superclass changes
         self.b_1.delete_links([self.a_links[0], self.a_links[1]])
-        eq_(self.b_1.get_linked(), [])
+        assert self.b_1.get_linked() == []
         self.b_a_links = set_links({self.b_1: [self.a_links[1], self.a_links[0]]}, association=self.b_a_association)
-        eq_(self.b_1.get_linked(), [self.a_links[1], self.a_links[0]])
+        assert self.b_1.get_linked() == [self.a_links[1], self.a_links[0]]
 
     def test_delete_linked_association(self):
         self.create_simple_link_object_test_setup()
         self.a_association.delete()
-        eq_(self.a.subclasses, [self.a1, self.a2])
-        eq_(self.a2_1.get_linked(), [])
-        eq_(self.b_1.get_linked(), [])
+        assert self.a.subclasses == [self.a1, self.a2]
+        assert self.a2_1.get_linked() == []
+        assert self.b_1.get_linked() == []
 
     def test_delete_linking_association(self):
         self.create_simple_link_object_test_setup()
         self.b_a_association.delete()
-        eq_(self.a2_1.get_linked(), [self.a1_1, self.a1_2])
-        eq_(self.b_1.get_linked(), [])
+        assert self.a2_1.get_linked() == [self.a1_1, self.a1_2]
+        assert self.b_1.get_linked() == []
 
     def test_link_object_classifier(self):
         self.create_simple_link_object_test_setup()
-        eq_(self.a_links[0].classifier, self.a_association)
-        eq_(self.b_a_links[0].classifier, self.b_a_association)
+        assert self.a_links[0].classifier == self.a_association
+        assert self.b_a_links[0].classifier == self.b_a_association
 
-        try:
+        with pytest.raises(CException) as exc_info:
             self.a_links[0].classifier = self.b_a_association
-            exception_expected_()
-        except CException as e:
-            eq_("Changes to the classifier (i.e., the association) of a link" +
-                " should not be performed with CObject methods", e.value)
+        e = exc_info.value
+        assert "Changes to the classifier (i.e., the association) of a link" + " should not be performed with CObject methods" == e.value
 
     def test_link_object_class_object_class(self):
         self.create_simple_link_object_test_setup()
-        eq_(self.a_links[0].class_object_class, None)
-        eq_(self.b_a_links[0].class_object_class, None)
+        assert self.a_links[0].class_object_class == None
+        assert self.b_a_links[0].class_object_class == None
 
     def test_link_object_instance_of(self):
         self.create_simple_link_object_test_setup()
-        eq_(self.a_links[0].instance_of(self.a_association), True)
-        eq_(self.a_links[0].instance_of(self.b_a_association), False)
-        eq_(self.a_links[0].instance_of(self.a), True)
-        eq_(self.a_links[0].instance_of(self.a1), False)
-        try:
+        assert self.a_links[0].instance_of(self.a_association) == True
+        assert self.a_links[0].instance_of(self.b_a_association) == False
+        assert self.a_links[0].instance_of(self.a) == True
+        assert self.a_links[0].instance_of(self.a1) == False
+        with pytest.raises(CException) as exc_info:
             cl = CClass(self.mcl, "CL")
-            eq_(self.a_links[0].instance_of(cl), False)
-            exception_expected_()
-        except CException as e:
-            eq_("'CL' is not an association or a metaclass", e.value)
+            assert self.a_links[0].instance_of(cl) == False
+        e = exc_info.value
+        assert "'CL' is not an association or a metaclass" == e.value
 
-        eq_(self.b_a_links[0].instance_of(self.a_association), False)
-        eq_(self.b_a_links[0].instance_of(self.b_a_association), True)
-        eq_(self.b_a_links[0].instance_of(self.a), False)
+        assert self.b_a_links[0].instance_of(self.a_association) == False
+        assert self.b_a_links[0].instance_of(self.b_a_association) == True
+        assert self.b_a_links[0].instance_of(self.a) == False
 
     def test_link_object_delete(self):
         self.create_simple_link_object_test_setup()
         self.a_links[0].delete()
         self.b_a_links[0].delete()
-        eq_(self.b_1.get_linked(), [self.a_links[1]])
-        eq_(self.a2_1.get_linked(), [self.a1_2])
-        eq_(self.a_links[1].get_linked(), [self.b_1])
+        assert self.b_1.get_linked() == [self.a_links[1]]
+        assert self.a2_1.get_linked() == [self.a1_2]
+        assert self.a_links[1].get_linked() == [self.b_1]
 
-        try:
+        with pytest.raises(CException) as exc_info:
             self.a_links[0].get_value("a")
-            exception_expected_()
-        except CException as e:
-            eq_("can't get value 'a' on deleted link", e.value)
+        e = exc_info.value
+        assert "can't get value 'a' on deleted link" == e.value
 
-        try:
+        with pytest.raises(CException) as exc_info:
             self.a_links[0].delete_value("a")
-            exception_expected_()
-        except CException as e:
-            eq_("can't delete value 'a' on deleted link", e.value)
+        e = exc_info.value
+        assert "can't delete value 'a' on deleted link" == e.value
 
-        try:
+        with pytest.raises(CException) as exc_info:
             self.a_links[0].set_value("a", 1)
-            exception_expected_()
-        except CException as e:
-            eq_("can't set value 'a' on deleted link", e.value)
+        e = exc_info.value
+        assert "can't set value 'a' on deleted link" == e.value
 
-        try:
+        with pytest.raises(CException) as exc_info:
             self.a_links[0].values = {"a": 1}
-            exception_expected_()
-        except CException as e:
-            eq_("can't set values on deleted link", e.value)
+        e = exc_info.value
+        assert "can't set values on deleted link" == e.value
 
     def test_class_link_classifier_bundable(self):
         self.create_simple_link_object_test_setup()
 
         bundle = CBundle("Bundle", elements=self.a.get_connected_elements())
-        eq_(set(bundle.elements), {self.a, self.a1, self.a2, self.b})
+        assert set(bundle.elements) == {self.a, self.a1, self.a2, self.b}
 
-        try:
+        with pytest.raises(CException) as exc_info:
             bundle.elements = self.a.get_connected_elements(add_links=True)
-            exception_expected_()
-        except CException as e:
-            eq_("unknown keyword argument 'add_links', should be one of:" +
-                " ['add_associations', 'add_stereotypes', 'process_stereotypes', 'add_bundles', 'process_bundles'," +
-                " 'stop_elements_inclusive', 'stop_elements_exclusive']", e.value)
+        e = exc_info.value
+        assert "unknown keyword argument 'add_links', should be one of:" + " ['add_associations', 'add_stereotypes', 'process_stereotypes', 'add_bundles', 'process_bundles'," + " 'stop_elements_inclusive', 'stop_elements_exclusive']" == e.value
 
-        eq_(self.a_association.bundles, [])
+        assert self.a_association.bundles == []
 
         bundle.elements = self.a.get_connected_elements(add_associations=True)
-        eq_(set(bundle.elements), {self.a, self.a1, self.a2, self.b, self.a_association})
+        assert set(bundle.elements) == {self.a, self.a1, self.a2, self.b, self.a_association}
 
-        eq_(self.a_association.bundles, [bundle])
+        assert self.a_association.bundles == [bundle]
 
         bundle2 = CBundle("Bundle2", elements=self.a_association.get_connected_elements(add_associations=True))
-        eq_(set(bundle2.elements), {self.a, self.a1, self.a2, self.b, self.a_association})
-        eq_(set(self.a_association.bundles), {bundle, bundle2})
+        assert set(bundle2.elements) == {self.a, self.a1, self.a2, self.b, self.a_association}
+        assert set(self.a_association.bundles) == {bundle, bundle2}
 
         bundle2.delete()
-        eq_(set(self.a_association.bundles), {bundle})
+        assert set(self.a_association.bundles) == {bundle}
 
         self.a_association.delete()
-        eq_(set(bundle.elements), {self.a, self.a1, self.a2, self.b})
+        assert set(bundle.elements) == {self.a, self.a1, self.a2, self.b}
 
     def test_class_link_bundable(self):
         self.create_simple_link_object_test_setup()
 
         bundle = CBundle("Bundle", elements=self.a1_1.class_object.get_connected_elements())
-        eq_(set(bundle.elements), {self.a1_1.class_object, self.a1_2.class_object, self.a2_1.class_object})
+        assert set(bundle.elements) == {self.a1_1.class_object, self.a1_2.class_object, self.a2_1.class_object}
 
-        try:
+        with pytest.raises(CException) as exc_info:
             bundle.elements = self.a1_1.class_object.get_connected_elements(add_associations=True)
-            exception_expected_()
-        except CException as e:
-            eq_("unknown keyword argument 'add_associations', should be one of:" +
-                " ['add_links', 'add_bundles', 'process_bundles', 'stop_elements_inclusive', " +
-                "'stop_elements_exclusive']", e.value)
+        e = exc_info.value
+        assert "unknown keyword argument 'add_associations', should be one of:" + " ['add_links', 'add_bundles', 'process_bundles', 'stop_elements_inclusive', " + "'stop_elements_exclusive']" == e.value
 
         bundle.elements = self.b_1.class_object.get_connected_elements()
-        eq_(set(bundle.elements), {self.b_1.class_object})
+        assert set(bundle.elements) == {self.b_1.class_object}
 
-        eq_(self.a_links[0].bundles, [])
+        assert self.a_links[0].bundles == []
 
         bundle.elements = self.b_1.class_object.get_connected_elements(add_links=True)
-        eq_(set(bundle.elements), {self.b_1.class_object, self.a_links[0], self.a_links[1]})
+        assert set(bundle.elements) == {self.b_1.class_object, self.a_links[0], self.a_links[1]}
 
-        eq_(self.a_links[0].bundles, [bundle])
+        assert self.a_links[0].bundles == [bundle]
 
         bundle2 = CBundle("Bundle2", elements=self.a_links[0].get_connected_elements(add_links=True))
-        eq_(set(bundle2.elements), {self.b_1.class_object, self.a_links[0], self.a_links[1]})
-        eq_(set(self.a_links[0].bundles), {bundle, bundle2})
+        assert set(bundle2.elements) == {self.b_1.class_object, self.a_links[0], self.a_links[1]}
+        assert set(self.a_links[0].bundles) == {bundle, bundle2}
 
         bundle2.delete()
-        eq_(set(self.a_links[0].bundles), {bundle})
+        assert set(self.a_links[0].bundles) == {bundle}
 
         self.a_links[0].delete()
-        eq_(set(bundle.elements), {self.b_1.class_object, self.a_links[1]})
+        assert set(bundle.elements) == {self.b_1.class_object, self.a_links[1]}
 
 
-if __name__ == "__main__":
-    nose.main()

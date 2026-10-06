@@ -1,58 +1,48 @@
-import nose
-from nose.tools import eq_
 
+import pytest
 from codeable_models import CMetaclass, CClass, CObject, CException, set_links, add_links, delete_links
-from tests.testing_commons import exception_expected_
 
 
 class TestObjectLinks:
-    def setup(self):
+    def setup_method(self):
         self.mcl = CMetaclass("MCL")
         self.c1 = CClass(self.mcl, "C1")
         self.c2 = CClass(self.mcl, "C2")
 
     def test_link_methods_wrong_keyword_args(self):
         o1 = CObject(self.c1, "o1")
-        try:
+        with pytest.raises(CException) as exc_info:
             add_links({o1: o1}, associationX=None)
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "unknown keywords argument")
-        try:
+        e = exc_info.value
+        assert e.value == "unknown keywords argument"
+        with pytest.raises(CException) as exc_info:
             o1.add_links(o1, associationX=None)
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "unknown keywords argument")
-        try:
+        e = exc_info.value
+        assert e.value == "unknown keywords argument"
+        with pytest.raises(CException) as exc_info:
             set_links({o1: o1}, associationX=None)
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "unknown keywords argument")
-        try:
+        e = exc_info.value
+        assert e.value == "unknown keywords argument"
+        with pytest.raises(CException) as exc_info:
             delete_links({o1: o1}, associationX=None)
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "unknown keywords argument")
-        try:
+        e = exc_info.value
+        assert e.value == "unknown keywords argument"
+        with pytest.raises(CException) as exc_info:
             o1.delete_links(o1, associationX=None)
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "unknown keywords argument")
-        try:
+        e = exc_info.value
+        assert e.value == "unknown keywords argument"
+        with pytest.raises(CException) as exc_info:
             o1.get_linked(associationX=None)
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "unknown keywords argument")
-        try:
+        e = exc_info.value
+        assert e.value == "unknown keywords argument"
+        with pytest.raises(CException) as exc_info:
             delete_links({o1: o1}, stereotype_instances=None)
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "unknown keywords argument")
-        try:
+        e = exc_info.value
+        assert e.value == "unknown keywords argument"
+        with pytest.raises(CException) as exc_info:
             delete_links({o1: o1}, tagged_values=None)
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "unknown keywords argument")
+        e = exc_info.value
+        assert e.value == "unknown keywords argument"
 
     def test_set_one_to_one_link(self):
         self.c1.association(self.c2, name="l", multiplicity="1")
@@ -61,16 +51,16 @@ class TestObjectLinks:
         o2 = CObject(self.c2, "o2")
         o3 = CObject(self.c2, "o3")
 
-        eq_(o1.linked, [])
+        assert o1.linked == []
 
         set_links({o1: o2})
-        eq_(o1.linked, [o2])
-        eq_(o2.linked, [o1])
+        assert o1.linked == [o2]
+        assert o2.linked == [o1]
 
         set_links({o1: o3})
-        eq_(o1.linked, [o3])
-        eq_(o2.linked, [])
-        eq_(o3.linked, [o1])
+        assert o1.linked == [o3]
+        assert o2.linked == []
+        assert o3.linked == [o1]
 
     def test_add_one_to_one_link(self):
         self.c1.association(self.c2, "l: 1 -> [target] 0..1")
@@ -79,84 +69,74 @@ class TestObjectLinks:
         o2 = CObject(self.c2, "o2")
         o3 = CObject(self.c2, "o3")
 
-        eq_(o1.linked, [])
+        assert o1.linked == []
 
         add_links({o1: o3})
-        eq_(o1.linked, [o3])
-        eq_(o3.linked, [o1])
+        assert o1.linked == [o3]
+        assert o3.linked == [o1]
 
         set_links({o1: []}, role_name="target")
-        eq_(o1.linked, [])
+        assert o1.linked == []
 
         o1.add_links(o2)
-        eq_(o1.linked, [o2])
-        eq_(o2.linked, [o1])
+        assert o1.linked == [o2]
+        assert o2.linked == [o1]
 
-        try:
+        with pytest.raises(CException) as exc_info:
             add_links({o1: o3})
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "links of object 'o1' have wrong multiplicity '2': should be '0..1'")
-        eq_(o1.linked, [o2])
-        eq_(o2.linked, [o1])
-        eq_(o3.linked, [])
+        e = exc_info.value
+        assert e.value == "links of object 'o1' have wrong multiplicity '2': should be '0..1'"
+        assert o1.linked == [o2]
+        assert o2.linked == [o1]
+        assert o3.linked == []
 
     def test_wrong_types_add_links(self):
         self.c1.association(self.c2, name="l", multiplicity="1")
         o1 = CObject(self.c1, "o1")
         o2 = CObject(self.c2, "o2")
-        try:
+        with pytest.raises(CException) as exc_info:
             add_links({o1: self.mcl})
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "link target 'MCL' is not an object, class, or link")
-        try:
+        e = exc_info.value
+        assert e.value == "link target 'MCL' is not an object, class, or link"
+        with pytest.raises(CException) as exc_info:
             o1.add_links([o2, self.mcl])
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "link target 'MCL' is not an object, class, or link")
+        e = exc_info.value
+        assert e.value == "link target 'MCL' is not an object, class, or link"
 
     def test_wrong_types_set_links(self):
         self.c1.association(self.c2, name="l", multiplicity="1")
         o1 = CObject(self.c1, "o1")
         o2 = CObject(self.c2, "o2")
-        try:
+        with pytest.raises(CException) as exc_info:
             set_links({o1: self.mcl})
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "link target 'MCL' is not an object, class, or link")
-        try:
+        e = exc_info.value
+        assert e.value == "link target 'MCL' is not an object, class, or link"
+        with pytest.raises(CException) as exc_info:
             set_links({o1: [o2, self.mcl]})
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "link target 'MCL' is not an object, class, or link")
-        try:
+        e = exc_info.value
+        assert e.value == "link target 'MCL' is not an object, class, or link"
+        with pytest.raises(CException) as exc_info:
             set_links({o1: [o2, None]})
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "link target 'None' is not an object, class, or link")
-        try:
+        e = exc_info.value
+        assert e.value == "link target 'None' is not an object, class, or link"
+        with pytest.raises(CException) as exc_info:
             set_links({self.mcl: o2})
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "link source 'MCL' is not an object, class, or link")
-        try:
+        e = exc_info.value
+        assert e.value == "link source 'MCL' is not an object, class, or link"
+        with pytest.raises(CException) as exc_info:
             set_links({None: o2})
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "link should not contain an empty source")
+        e = exc_info.value
+        assert e.value == "link should not contain an empty source"
 
     def test_wrong_format_set_links(self):
         self.c1.association(self.c2, name="l", multiplicity="1")
         o1 = CObject(self.c1, "o1")
         o2 = CObject(self.c2, "o2")
-        try:
+        with pytest.raises(CException) as exc_info:
             # noinspection PyTypeChecker
             set_links([o1, o2])
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "link definitions should be of the form {<link source 1>: " +
-                "<link target(s) 1>, ..., <link source n>: <link target(s) n>}")
+        e = exc_info.value
+        assert e.value == "link definitions should be of the form {<link source 1>: " + "<link target(s) 1>, ..., <link source n>: <link target(s) n>}"
 
     def test_remove_one_to_one_link(self):
         a = self.c1.association(self.c2, "l: 1 -> [c2] 0..1")
@@ -167,30 +147,29 @@ class TestObjectLinks:
         o4 = CObject(self.c2, "o4")
 
         links = set_links({o1: o2, o3: o4})
-        eq_(o1.linked, [o2])
-        eq_(o2.linked, [o1])
-        eq_(o3.linked, [o4])
-        eq_(o4.linked, [o3])
-        eq_(o1.links, [links[0]])
-        eq_(o2.links, [links[0]])
-        eq_(o3.links, [links[1]])
-        eq_(o4.links, [links[1]])
+        assert o1.linked == [o2]
+        assert o2.linked == [o1]
+        assert o3.linked == [o4]
+        assert o4.linked == [o3]
+        assert o1.links == [links[0]]
+        assert o2.links == [links[0]]
+        assert o3.links == [links[1]]
+        assert o4.links == [links[1]]
 
-        try:
+        with pytest.raises(CException) as exc_info:
             links = set_links({o1: None})
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "matching association not found for source 'o1' and targets '[]'")
+        e = exc_info.value
+        assert e.value == "matching association not found for source 'o1' and targets '[]'"
 
         set_links({o1: None}, association=a)
-        eq_(o1.linked, [])
-        eq_(o2.linked, [])
-        eq_(o3.linked, [o4])
-        eq_(o4.linked, [o3])
-        eq_(o1.links, [])
-        eq_(o2.links, [])
-        eq_(o3.links, [links[1]])
-        eq_(o4.links, [links[1]])
+        assert o1.linked == []
+        assert o2.linked == []
+        assert o3.linked == [o4]
+        assert o4.linked == [o3]
+        assert o1.links == []
+        assert o2.links == []
+        assert o3.links == [links[1]]
+        assert o4.links == [links[1]]
 
     def test_set_links_one_to_n_link(self):
         self.c1.association(self.c2, name="l")
@@ -199,17 +178,17 @@ class TestObjectLinks:
         o3 = CObject(self.c2, "o3")
 
         set_links({o1: [o2, o3]})
-        eq_(o1.linked, [o2, o3])
-        eq_(o2.linked, [o1])
-        eq_(o3.linked, [o1])
+        assert o1.linked == [o2, o3]
+        assert o2.linked == [o1]
+        assert o3.linked == [o1]
         set_links({o1: o2})
-        eq_(o1.linked, [o2])
-        eq_(o2.linked, [o1])
-        eq_(o3.linked, [])
+        assert o1.linked == [o2]
+        assert o2.linked == [o1]
+        assert o3.linked == []
         set_links({o3: o1, o2: o1})
-        eq_(o1.linked, [o3, o2])
-        eq_(o2.linked, [o1])
-        eq_(o3.linked, [o1])
+        assert o1.linked == [o3, o2]
+        assert o2.linked == [o1]
+        assert o3.linked == [o1]
 
     def test_add_links_one_to_n_link(self):
         self.c1.association(self.c2, name="l")
@@ -221,21 +200,21 @@ class TestObjectLinks:
         o6 = CObject(self.c2, "o6")
 
         add_links({o1: [o2, o3]})
-        eq_(o1.linked, [o2, o3])
-        eq_(o2.linked, [o1])
-        eq_(o3.linked, [o1])
+        assert o1.linked == [o2, o3]
+        assert o2.linked == [o1]
+        assert o3.linked == [o1]
         add_links({o1: o4})
-        eq_(o1.linked, [o2, o3, o4])
-        eq_(o2.linked, [o1])
-        eq_(o3.linked, [o1])
-        eq_(o4.linked, [o1])
+        assert o1.linked == [o2, o3, o4]
+        assert o2.linked == [o1]
+        assert o3.linked == [o1]
+        assert o4.linked == [o1]
         o1.add_links([o5, o6])
-        eq_(o1.linked, [o2, o3, o4, o5, o6])
-        eq_(o2.linked, [o1])
-        eq_(o3.linked, [o1])
-        eq_(o4.linked, [o1])
-        eq_(o5.linked, [o1])
-        eq_(o6.linked, [o1])
+        assert o1.linked == [o2, o3, o4, o5, o6]
+        assert o2.linked == [o1]
+        assert o3.linked == [o1]
+        assert o4.linked == [o1]
+        assert o5.linked == [o1]
+        assert o6.linked == [o1]
 
     def test_remove_one_to_n_link(self):
         a = self.c1.association(self.c2, name="l", multiplicity="*")
@@ -244,18 +223,17 @@ class TestObjectLinks:
         o3 = CObject(self.c2, "o3")
         set_links({o1: [o2, o3]})
         set_links({o1: o2})
-        eq_(o1.linked, [o2])
-        eq_(o2.linked, [o1])
-        eq_(o3.linked, [])
-        try:
+        assert o1.linked == [o2]
+        assert o2.linked == [o1]
+        assert o3.linked == []
+        with pytest.raises(CException) as exc_info:
             set_links({o1: []})
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "matching association not found for source 'o1' and targets '[]'")
+        e = exc_info.value
+        assert e.value == "matching association not found for source 'o1' and targets '[]'"
         set_links({o1: []}, association=a)
-        eq_(o1.linked, [])
-        eq_(o2.linked, [])
-        eq_(o3.linked, [])
+        assert o1.linked == []
+        assert o2.linked == []
+        assert o3.linked == []
 
     def test_n_to_n_link(self):
         a = self.c1.association(self.c2, name="l", source_multiplicity="*")
@@ -267,25 +245,24 @@ class TestObjectLinks:
 
         set_links({o1a: [o2a, o2b], o1b: [o2a], o1c: [o2b]})
 
-        eq_(o1a.linked, [o2a, o2b])
-        eq_(o1b.linked, [o2a])
-        eq_(o1c.linked, [o2b])
-        eq_(o2a.linked, [o1a, o1b])
-        eq_(o2b.linked, [o1a, o1c])
+        assert o1a.linked == [o2a, o2b]
+        assert o1b.linked == [o2a]
+        assert o1c.linked == [o2b]
+        assert o2a.linked == [o1a, o1b]
+        assert o2b.linked == [o1a, o1c]
 
         set_links({o2a: [o1a, o1b]})
-        try:
+        with pytest.raises(CException) as exc_info:
             set_links({o2b: []})
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "matching association not found for source 'o2b' and targets '[]'")
+        e = exc_info.value
+        assert e.value == "matching association not found for source 'o2b' and targets '[]'"
         set_links({o2b: []}, association=a)
 
-        eq_(o1a.linked, [o2a])
-        eq_(o1b.linked, [o2a])
-        eq_(o1c.linked, [])
-        eq_(o2a.linked, [o1a, o1b])
-        eq_(o2b.linked, [])
+        assert o1a.linked == [o2a]
+        assert o1b.linked == [o2a]
+        assert o1c.linked == []
+        assert o2a.linked == [o1a, o1b]
+        assert o2b.linked == []
 
     def test_remove_n_to_n_link(self):
         self.c1.association(self.c2, name="l", source_multiplicity="*", multiplicity="*")
@@ -295,10 +272,10 @@ class TestObjectLinks:
         o4 = CObject(self.c1, "o4")
         set_links({o1: [o2, o3], o4: o2})
         set_links({o1: o2, o4: [o3, o2]})
-        eq_(o1.linked, [o2])
-        eq_(o2.linked, [o1, o4])
-        eq_(o3.linked, [o4])
-        eq_(o4.linked, [o3, o2])
+        assert o1.linked == [o2]
+        assert o2.linked == [o1, o4]
+        assert o3.linked == [o4]
+        assert o4.linked == [o3, o2]
 
     def test_n_to_n_set_self_link(self):
         self.c1.association(self.c1, name="a", source_multiplicity="*", multiplicity="*", source_role_name="super",
@@ -314,26 +291,26 @@ class TestObjectLinks:
         set_links({top: [mid1, mid2, mid3]}, role_name="sub")
         add_links({mid1: [bottom1, bottom2]}, role_name="sub")
 
-        eq_(top.linked, [mid1, mid2, mid3])
-        eq_(mid1.linked, [top, bottom1, bottom2])
-        eq_(mid2.linked, [top])
-        eq_(mid3.linked, [top])
-        eq_(bottom1.linked, [mid1])
-        eq_(bottom2.linked, [mid1])
+        assert top.linked == [mid1, mid2, mid3]
+        assert mid1.linked == [top, bottom1, bottom2]
+        assert mid2.linked == [top]
+        assert mid3.linked == [top]
+        assert bottom1.linked == [mid1]
+        assert bottom2.linked == [mid1]
 
-        eq_(top.get_linked(role_name="sub"), [mid1, mid2, mid3])
-        eq_(mid1.get_linked(role_name="sub"), [bottom1, bottom2])
-        eq_(mid2.get_linked(role_name="sub"), [])
-        eq_(mid3.get_linked(role_name="sub"), [])
-        eq_(bottom1.get_linked(role_name="sub"), [])
-        eq_(bottom2.get_linked(role_name="sub"), [])
+        assert top.get_linked(role_name="sub") == [mid1, mid2, mid3]
+        assert mid1.get_linked(role_name="sub") == [bottom1, bottom2]
+        assert mid2.get_linked(role_name="sub") == []
+        assert mid3.get_linked(role_name="sub") == []
+        assert bottom1.get_linked(role_name="sub") == []
+        assert bottom2.get_linked(role_name="sub") == []
 
-        eq_(top.get_linked(role_name="super"), [])
-        eq_(mid1.get_linked(role_name="super"), [top])
-        eq_(mid2.get_linked(role_name="super"), [top])
-        eq_(mid3.get_linked(role_name="super"), [top])
-        eq_(bottom1.get_linked(role_name="super"), [mid1])
-        eq_(bottom2.get_linked(role_name="super"), [mid1])
+        assert top.get_linked(role_name="super") == []
+        assert mid1.get_linked(role_name="super") == [top]
+        assert mid2.get_linked(role_name="super") == [top]
+        assert mid3.get_linked(role_name="super") == [top]
+        assert bottom1.get_linked(role_name="super") == [mid1]
+        assert bottom2.get_linked(role_name="super") == [mid1]
 
     def test_n_to_n_set_self_link_delete_links(self):
         self.c1.association(self.c1, name="a", source_multiplicity="*", multiplicity="*", source_role_name="super",
@@ -349,31 +326,31 @@ class TestObjectLinks:
         set_links({top: [mid1, mid2, mid3], mid1: [bottom1, bottom2]}, role_name="sub")
         # delete links
         set_links({top: []}, role_name="sub")
-        eq_(top.linked, [])
-        eq_(mid1.linked, [bottom1, bottom2])
+        assert top.linked == []
+        assert mid1.linked == [bottom1, bottom2]
         # change links
         set_links({mid1: top, mid3: top, bottom1: mid1, bottom2: mid1}, role_name="super")
 
-        eq_(top.linked, [mid1, mid3])
-        eq_(mid1.linked, [top, bottom1, bottom2])
-        eq_(mid2.linked, [])
-        eq_(mid3.linked, [top])
-        eq_(bottom1.linked, [mid1])
-        eq_(bottom2.linked, [mid1])
+        assert top.linked == [mid1, mid3]
+        assert mid1.linked == [top, bottom1, bottom2]
+        assert mid2.linked == []
+        assert mid3.linked == [top]
+        assert bottom1.linked == [mid1]
+        assert bottom2.linked == [mid1]
 
-        eq_(top.get_linked(role_name="sub"), [mid1, mid3])
-        eq_(mid1.get_linked(role_name="sub"), [bottom1, bottom2])
-        eq_(mid2.get_linked(role_name="sub"), [])
-        eq_(mid3.get_linked(role_name="sub"), [])
-        eq_(bottom1.get_linked(role_name="sub"), [])
-        eq_(bottom2.get_linked(role_name="sub"), [])
+        assert top.get_linked(role_name="sub") == [mid1, mid3]
+        assert mid1.get_linked(role_name="sub") == [bottom1, bottom2]
+        assert mid2.get_linked(role_name="sub") == []
+        assert mid3.get_linked(role_name="sub") == []
+        assert bottom1.get_linked(role_name="sub") == []
+        assert bottom2.get_linked(role_name="sub") == []
 
-        eq_(top.get_linked(role_name="super"), [])
-        eq_(mid1.get_linked(role_name="super"), [top])
-        eq_(mid2.get_linked(role_name="super"), [])
-        eq_(mid3.get_linked(role_name="super"), [top])
-        eq_(bottom1.get_linked(role_name="super"), [mid1])
-        eq_(bottom2.get_linked(role_name="super"), [mid1])
+        assert top.get_linked(role_name="super") == []
+        assert mid1.get_linked(role_name="super") == [top]
+        assert mid2.get_linked(role_name="super") == []
+        assert mid3.get_linked(role_name="super") == [top]
+        assert bottom1.get_linked(role_name="super") == [mid1]
+        assert bottom2.get_linked(role_name="super") == [mid1]
 
     def test_incompatible_classifier(self):
         self.c1.association(self.c2, name="l", multiplicity="*")
@@ -381,43 +358,39 @@ class TestObjectLinks:
         o1 = CObject(self.c1, "o1")
         o2 = CObject(self.c2, "o2")
         o3 = CObject(cl, "o3")
-        try:
+        with pytest.raises(CException) as exc_info:
             set_links({o1: [o2, o3]})
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "object 'o3' has an incompatible classifier")
-        try:
+        e = exc_info.value
+        assert e.value == "object 'o3' has an incompatible classifier"
+        with pytest.raises(CException) as exc_info:
             set_links({o1: o3})
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "matching association not found for source 'o1' and targets '['o3']'")
+        e = exc_info.value
+        assert e.value == "matching association not found for source 'o1' and targets '['o3']'"
 
     def test_duplicate_assignment(self):
         a = self.c1.association(self.c2, "l: *->*")
         o1 = CObject(self.c1, "o1")
         o2 = CObject(self.c2, "o2")
-        try:
+        with pytest.raises(CException) as exc_info:
             set_links({o1: [o2, o2]})
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "trying to link the same link twice 'o1 -> o2'' twice for the same association")
-        eq_(o1.get_linked(), [])
-        eq_(o2.get_linked(), [])
+        e = exc_info.value
+        assert e.value == "trying to link the same link twice 'o1 -> o2'' twice for the same association"
+        assert o1.get_linked() == []
+        assert o2.get_linked() == []
         b = self.c1.association(self.c2, "l: *->*")
         o1.add_links(o2, association=a)
         o1.add_links(o2, association=b)
-        eq_(o1.get_linked(), [o2, o2])
-        eq_(o2.get_linked(), [o1, o1])
+        assert o1.get_linked() == [o2, o2]
+        assert o2.get_linked() == [o1, o1]
 
     def test_non_existing_role_name(self):
         self.c1.association(self.c1, role_name="next", source_role_name="prior",
                             source_multiplicity="1", multiplicity="1")
         o1 = CObject(self.c1, "o1")
-        try:
+        with pytest.raises(CException) as exc_info:
             set_links({o1: o1}, role_name="target")
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "matching association not found for source 'o1' and targets '['o1']'")
+        e = exc_info.value
+        assert e.value == "matching association not found for source 'o1' and targets '['o1']'"
 
     def test_link_association_ambiguous(self):
         self.c1.association(self.c2, name="a1", role_name="c2", multiplicity="*")
@@ -425,18 +398,14 @@ class TestObjectLinks:
 
         o1 = CObject(self.c1, "o1")
         o2 = CObject(self.c2, "o2")
-        try:
+        with pytest.raises(CException) as exc_info:
             set_links({o1: o2})
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "link specification ambiguous, multiple matching associations " +
-                "found for source 'o1' and targets '['o2']'")
-        try:
+        e = exc_info.value
+        assert e.value == "link specification ambiguous, multiple matching associations " + "found for source 'o1' and targets '['o2']'"
+        with pytest.raises(CException) as exc_info:
             set_links({o1: o2}, role_name="c2")
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "link specification ambiguous, multiple matching associations " +
-                "found for source 'o1' and targets '['o2']'")
+        e = exc_info.value
+        assert e.value == "link specification ambiguous, multiple matching associations " + "found for source 'o1' and targets '['o2']'"
 
     def test_link_and_get_links_by_association(self):
         a1 = self.c1.association(self.c2, name="a1", multiplicity="*")
@@ -449,14 +418,14 @@ class TestObjectLinks:
         links_a1 = set_links({o1: o2}, association=a1)
         links_a2 = set_links({o1: [o2, o3]}, association=a2)
 
-        eq_(o1.get_linked(), [o2, o2, o3])
-        eq_(o1.linked, [o2, o2, o3])
+        assert o1.get_linked() == [o2, o2, o3]
+        assert o1.linked == [o2, o2, o3]
 
-        eq_(o1.get_linked(association=a1), [o2])
-        eq_(o1.get_linked(association=a2), [o2, o3])
+        assert o1.get_linked(association=a1) == [o2]
+        assert o1.get_linked(association=a2) == [o2, o3]
 
-        eq_(o1.get_links_for_association(a1), links_a1)
-        eq_(o1.get_links_for_association(a2), links_a2)
+        assert o1.get_links_for_association(a1) == links_a1
+        assert o1.get_links_for_association(a2) == links_a2
 
     def test_link_with_inheritance_in_classifier_targets(self):
         sub_class = CClass(self.mcl, superclasses=self.c2)
@@ -469,29 +438,27 @@ class TestObjectLinks:
         o_sub_2 = CObject(sub_class, "o_sub_2")
         o_super_1 = CObject(self.c2, "o_super_1")
         o_super_2 = CObject(self.c2, "o_super_2")
-        try:
+        with pytest.raises(CException) as exc_info:
             # ambiguous, list works for both associations 
             set_links({o1: [o_sub_1, o_sub_2]})
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "link specification ambiguous, multiple matching associations " +
-                "found for source 'o1' and targets '['o_sub_1', 'o_sub_2']'")
+        e = exc_info.value
+        assert e.value == "link specification ambiguous, multiple matching associations " + "found for source 'o1' and targets '['o_sub_1', 'o_sub_2']'"
         set_links({o1: [o_sub_1, o_sub_2]}, association=a1)
         set_links({o1: [o_sub_1]}, association=a2)
         set_links({o2: [o_super_1, o_super_2]})
 
-        eq_(o1.linked, [o_sub_1, o_sub_2, o_sub_1])
-        eq_(o1.get_linked(), [o_sub_1, o_sub_2, o_sub_1])
-        eq_(o2.get_linked(), [o_super_1, o_super_2])
-        eq_(o1.get_linked(association=a1), [o_sub_1, o_sub_2])
-        eq_(o1.get_linked(association=a2), [o_sub_1])
-        eq_(o2.get_linked(association=a1), [])
-        eq_(o2.get_linked(association=a2), [o_super_1, o_super_2])
+        assert o1.linked == [o_sub_1, o_sub_2, o_sub_1]
+        assert o1.get_linked() == [o_sub_1, o_sub_2, o_sub_1]
+        assert o2.get_linked() == [o_super_1, o_super_2]
+        assert o1.get_linked(association=a1) == [o_sub_1, o_sub_2]
+        assert o1.get_linked(association=a2) == [o_sub_1]
+        assert o2.get_linked(association=a1) == []
+        assert o2.get_linked(association=a2) == [o_super_1, o_super_2]
 
         # this mixed list is applicable only for a2
         set_links({o2: [o_sub_1, o_super_1]})
-        eq_(o2.get_linked(association=a1), [])
-        eq_(o2.get_linked(association=a2), [o_sub_1, o_super_1])
+        assert o2.get_linked(association=a1) == []
+        assert o2.get_linked(association=a2) == [o_sub_1, o_super_1]
 
     def test_link_with_inheritance_in_classifier_targets_using_role_names(self):
         sub_class = CClass(self.mcl, superclasses=self.c2)
@@ -508,17 +475,17 @@ class TestObjectLinks:
         set_links({o1: [o_sub_1]}, role_name="c2")
         set_links({o2: [o_super_1, o_super_2]})
 
-        eq_(o1.linked, [o_sub_1, o_sub_2, o_sub_1])
-        eq_(o1.get_linked(), [o_sub_1, o_sub_2, o_sub_1])
-        eq_(o2.get_linked(), [o_super_1, o_super_2])
-        eq_(o1.get_linked(association=a1), [o_sub_1, o_sub_2])
-        eq_(o1.get_linked(association=a2), [o_sub_1])
-        eq_(o2.get_linked(association=a1), [])
-        eq_(o2.get_linked(association=a2), [o_super_1, o_super_2])
-        eq_(o1.get_linked(role_name="sub_class"), [o_sub_1, o_sub_2])
-        eq_(o1.get_linked(role_name="c2"), [o_sub_1])
-        eq_(o2.get_linked(role_name="sub_class"), [])
-        eq_(o2.get_linked(role_name="c2"), [o_super_1, o_super_2])
+        assert o1.linked == [o_sub_1, o_sub_2, o_sub_1]
+        assert o1.get_linked() == [o_sub_1, o_sub_2, o_sub_1]
+        assert o2.get_linked() == [o_super_1, o_super_2]
+        assert o1.get_linked(association=a1) == [o_sub_1, o_sub_2]
+        assert o1.get_linked(association=a2) == [o_sub_1]
+        assert o2.get_linked(association=a1) == []
+        assert o2.get_linked(association=a2) == [o_super_1, o_super_2]
+        assert o1.get_linked(role_name="sub_class") == [o_sub_1, o_sub_2]
+        assert o1.get_linked(role_name="c2") == [o_sub_1]
+        assert o2.get_linked(role_name="sub_class") == []
+        assert o2.get_linked(role_name="c2") == [o_super_1, o_super_2]
 
     def test_link_delete_association(self):
         a = self.c1.association(self.c2, name="l", source_multiplicity="*", multiplicity="*")
@@ -531,15 +498,14 @@ class TestObjectLinks:
         set_links({o1: [o2]})
         set_links({o4: [o3, o2]})
         a.delete()
-        eq_(o1.linked, [])
-        eq_(o2.linked, [])
-        eq_(o3.linked, [])
-        eq_(o4.linked, [])
-        try:
+        assert o1.linked == []
+        assert o2.linked == []
+        assert o3.linked == []
+        assert o4.linked == []
+        with pytest.raises(CException) as exc_info:
             set_links({o1: [o2, o3]})
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "matching association not found for source 'o2' and targets '['o2', 'o3']'")
+        e = exc_info.value
+        assert e.value == "matching association not found for source 'o2' and targets '['o2', 'o3']'"
 
     def test_link_delete_object(self):
         self.c1.association(self.c2, name="l", source_multiplicity="*", multiplicity="*")
@@ -550,19 +516,17 @@ class TestObjectLinks:
         add_links({o1: [o2, o3]})
         add_links({o4: [o3, o2]})
         o2.delete()
-        eq_(o1.linked, [o3])
-        eq_(o3.linked, [o1, o4])
-        eq_(o4.linked, [o3])
-        try:
+        assert o1.linked == [o3]
+        assert o3.linked == [o1, o4]
+        assert o4.linked == [o3]
+        with pytest.raises(CException) as exc_info:
             add_links({o1: [o2]})
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "cannot link to deleted target")
-        try:
+        e = exc_info.value
+        assert e.value == "cannot link to deleted target"
+        with pytest.raises(CException) as exc_info:
             add_links({o2: [o1]})
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "cannot link to deleted source")
+        e = exc_info.value
+        assert e.value == "cannot link to deleted source"
 
     def test_one_to_one_link_multiplicity(self):
         a = self.c1.association(self.c2, name="l", multiplicity="1", source_multiplicity="1..1")
@@ -572,27 +536,23 @@ class TestObjectLinks:
         o3 = CObject(self.c2, "o3")
         o4 = CObject(self.c1, "o4")
 
-        try:
+        with pytest.raises(CException) as exc_info:
             set_links({o1: []}, association=a)
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "links of object 'o1' have wrong multiplicity '0': should be '1'")
-        try:
+        e = exc_info.value
+        assert e.value == "links of object 'o1' have wrong multiplicity '0': should be '1'"
+        with pytest.raises(CException) as exc_info:
             set_links({o1: [o2, o3]})
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "links of object 'o1' have wrong multiplicity '2': should be '1'")
+        e = exc_info.value
+        assert e.value == "links of object 'o1' have wrong multiplicity '2': should be '1'"
 
-        try:
+        with pytest.raises(CException) as exc_info:
             set_links({o2: []}, association=a)
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "links of object 'o2' have wrong multiplicity '0': should be '1..1'")
-        try:
+        e = exc_info.value
+        assert e.value == "links of object 'o2' have wrong multiplicity '0': should be '1..1'"
+        with pytest.raises(CException) as exc_info:
             set_links({o2: [o1, o4]})
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "links of object 'o2' have wrong multiplicity '2': should be '1..1'")
+        e = exc_info.value
+        assert e.value == "links of object 'o2' have wrong multiplicity '2': should be '1..1'"
 
     def test_one_to_n_link_multiplicity(self):
         a = self.c1.association(self.c2, name="l", source_multiplicity="1", multiplicity="1..*")
@@ -601,25 +561,22 @@ class TestObjectLinks:
         o3 = CObject(self.c2, "o3")
         o4 = CObject(self.c1, "o4")
 
-        try:
+        with pytest.raises(CException) as exc_info:
             set_links({o1: []}, association=a)
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "links of object 'o1' have wrong multiplicity '0': should be '1..*'")
+        e = exc_info.value
+        assert e.value == "links of object 'o1' have wrong multiplicity '0': should be '1..*'"
 
         set_links({o1: [o2, o3]})
-        eq_(o1.get_linked(association=a), [o2, o3])
+        assert o1.get_linked(association=a) == [o2, o3]
 
-        try:
+        with pytest.raises(CException) as exc_info:
             set_links({o2: []}, association=a)
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "links of object 'o2' have wrong multiplicity '0': should be '1'")
-        try:
+        e = exc_info.value
+        assert e.value == "links of object 'o2' have wrong multiplicity '0': should be '1'"
+        with pytest.raises(CException) as exc_info:
             set_links({o2: [o1, o4]})
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "links of object 'o2' have wrong multiplicity '2': should be '1'")
+        e = exc_info.value
+        assert e.value == "links of object 'o2' have wrong multiplicity '2': should be '1'"
 
     def test_specific_n_to_n_link_multiplicity(self):
         a = self.c1.association(self.c2, name="l", source_multiplicity="1..2", multiplicity="2")
@@ -630,37 +587,32 @@ class TestObjectLinks:
         o5 = CObject(self.c1, "o5")
         o6 = CObject(self.c2, "o6")
 
-        try:
+        with pytest.raises(CException) as exc_info:
             set_links({o1: []}, association=a)
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "links of object 'o1' have wrong multiplicity '0': should be '2'")
-        try:
+        e = exc_info.value
+        assert e.value == "links of object 'o1' have wrong multiplicity '0': should be '2'"
+        with pytest.raises(CException) as exc_info:
             set_links({o1: [o2]}, association=a)
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "links of object 'o1' have wrong multiplicity '1': should be '2'")
-        try:
+        e = exc_info.value
+        assert e.value == "links of object 'o1' have wrong multiplicity '1': should be '2'"
+        with pytest.raises(CException) as exc_info:
             set_links({o1: [o2, o3, o6]}, association=a)
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "links of object 'o1' have wrong multiplicity '3': should be '2'")
+        e = exc_info.value
+        assert e.value == "links of object 'o1' have wrong multiplicity '3': should be '2'"
 
         set_links({o1: [o2, o3]})
-        eq_(o1.get_linked(association=a), [o2, o3])
+        assert o1.get_linked(association=a) == [o2, o3]
         set_links({o2: [o1, o4], o1: o3, o4: o3})
-        eq_(o2.get_linked(association=a), [o1, o4])
+        assert o2.get_linked(association=a) == [o1, o4]
 
-        try:
+        with pytest.raises(CException) as exc_info:
             set_links({o2: []}, association=a)
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "links of object 'o2' have wrong multiplicity '0': should be '1..2'")
-        try:
+        e = exc_info.value
+        assert e.value == "links of object 'o2' have wrong multiplicity '0': should be '1..2'"
+        with pytest.raises(CException) as exc_info:
             set_links({o2: [o1, o4, o5]})
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "links of object 'o2' have wrong multiplicity '3': should be '1..2'")
+        e = exc_info.value
+        assert e.value == "links of object 'o2' have wrong multiplicity '3': should be '1..2'"
 
     def test_get_links(self):
         c1_sub_class = CClass(self.mcl, "C1Sub", superclasses=self.c1)
@@ -675,75 +627,75 @@ class TestObjectLinks:
         o2_sub = CObject(c2_sub_class, "o2_sub")
 
         links1 = set_links({o1: o2})
-        eq_(links1, o1.links)
+        assert links1 == o1.links
         link1 = o1.links[0]
         link2 = [o for o in o1.links if o.association == a1][0]
-        eq_(link1, link2)
-        eq_(link1.association, a1)
-        eq_(link1.source, o1)
-        eq_(link1.target, o2)
+        assert link1 == link2
+        assert link1.association == a1
+        assert link1.source == o1
+        assert link1.target == o2
 
         links2 = set_links({o1: o2_sub})
-        eq_(links2, o1.links)
-        eq_(len(o1.links), 1)
+        assert links2 == o1.links
+        assert len(o1.links) == 1
         link1 = o1.links[0]
         link2 = [o for o in o1.links if o.association == a1][0]
-        eq_(link1, link2)
-        eq_(link1.association, a1)
-        eq_(link1.source, o1)
-        eq_(link1.target, o2_sub)
+        assert link1 == link2
+        assert link1.association == a1
+        assert link1.source == o1
+        assert link1.target == o2_sub
 
         links3 = set_links({o1: o2})
-        eq_(links3, o1.links)
-        eq_(len(o1.links), 1)
+        assert links3 == o1.links
+        assert len(o1.links) == 1
         link1 = o1.links[0]
         link2 = [o for o in o1.links if o.association == a1][0]
-        eq_(link1, link2)
-        eq_(link1.association, a1)
-        eq_(link1.source, o1)
-        eq_(link1.target, o2)
+        assert link1 == link2
+        assert link1.association == a1
+        assert link1.source == o1
+        assert link1.target == o2
 
         links4 = set_links({o1: o1}, role_name="next")
-        eq_(links3 + links4, o1.links)
-        eq_(len(o1.links), 2)
+        assert links3 + links4 == o1.links
+        assert len(o1.links) == 2
         link1 = o1.links[1]
         link2 = [o for o in o1.links if o.association == a2][0]
-        eq_(link1, link2)
-        eq_(link1.association, a2)
-        eq_(link1.source, o1)
-        eq_(link1.target, o1)
+        assert link1 == link2
+        assert link1.association == a2
+        assert link1.source == o1
+        assert link1.target == o1
 
         links5 = set_links({o1: o1_sub}, role_name="next")
-        eq_(links3 + links5, o1.links)
-        eq_(len(o1.links), 2)
+        assert links3 + links5 == o1.links
+        assert len(o1.links) == 2
         link1 = o1.links[1]
         link2 = [o for o in o1.links if o.association == a2][0]
-        eq_(link1, link2)
-        eq_(link1.association, a2)
-        eq_(link1.source, o1)
-        eq_(link1.target, o1_sub)
+        assert link1 == link2
+        assert link1.association == a2
+        assert link1.source == o1
+        assert link1.target == o1_sub
 
         set_links({o1: o1}, role_name="next")
-        eq_(len(o1.links), 2)
+        assert len(o1.links) == 2
         link1 = o1.links[1]
         link2 = [o for o in o1.links if o.association == a2][0]
-        eq_(link1, link2)
-        eq_(link1.association, a2)
-        eq_(link1.source, o1)
-        eq_(link1.target, o1)
+        assert link1 == link2
+        assert link1.association == a2
+        assert link1.source == o1
+        assert link1.target == o1
 
         set_links({o1: []}, association=a1)
         set_links({o1: []}, association=a2)
-        eq_(len(o1.links), 0)
+        assert len(o1.links) == 0
 
         set_links({o1_sub: o1}, role_name="next")
-        eq_(len(o1_sub.links), 1)
+        assert len(o1_sub.links) == 1
         link1 = o1_sub.links[0]
         link2 = [o for o in o1_sub.links if o.association == a2][0]
-        eq_(link1, link2)
-        eq_(link1.association, a2)
-        eq_(link1.source, o1_sub)
-        eq_(link1.target, o1)
+        assert link1 == link2
+        assert link1.association == a2
+        assert link1.source == o1_sub
+        assert link1.target == o1
 
     def test_get_links_self_link(self):
         a1 = self.c1.association(self.c1, role_name="to", source_role_name="from",
@@ -759,17 +711,17 @@ class TestObjectLinks:
         link2 = [o for o in o1.links if o.association == a1][0]
         link3 = [o for o in o1.links if o.role_name == "to"][0]
         link4 = [o for o in o1.links if o.source_role_name == "from"][0]
-        eq_(link1, link2)
-        eq_(link1, link3)
-        eq_(link1, link4)
-        eq_(link1.association, a1)
-        eq_(link1.source, o1)
-        eq_(link1.target, o2)
+        assert link1 == link2
+        assert link1 == link3
+        assert link1 == link4
+        assert link1.association == a1
+        assert link1.source == o1
+        assert link1.target == o2
 
-        eq_(len(o1.links), 4)
-        eq_(len(o2.links), 1)
-        eq_(len(o3.links), 2)
-        eq_(len(o4.links), 2)
+        assert len(o1.links) == 4
+        assert len(o2.links) == 1
+        assert len(o3.links) == 2
+        assert len(o4.links) == 2
 
     def test_add_links(self):
         self.c1.association(self.c2, "1 -> [role1] *")
@@ -782,31 +734,29 @@ class TestObjectLinks:
         o4 = CObject(self.c2, "o4")
 
         add_links({o1: o2}, role_name="role1")
-        eq_(o1.get_linked(role_name="role1"), [o2])
+        assert o1.get_linked(role_name="role1") == [o2]
         add_links({o1: [o3, o4]}, role_name="role1")
         o1.get_linked(role_name="role1")
-        eq_(o1.get_linked(role_name="role1"), [o2, o3, o4])
+        assert o1.get_linked(role_name="role1") == [o2, o3, o4]
 
         o1.add_links(o2, role_name="role2")
-        eq_(o1.get_linked(role_name="role2"), [o2])
+        assert o1.get_linked(role_name="role2") == [o2]
         o1.add_links([o3, o4], role_name="role2")
         o1.get_linked(role_name="role2")
-        eq_(o1.get_linked(role_name="role2"), [o2, o3, o4])
+        assert o1.get_linked(role_name="role2") == [o2, o3, o4]
 
         add_links({o1: o2}, role_name="role3")
-        eq_(o1.get_linked(role_name="role3"), [o2])
-        try:
+        assert o1.get_linked(role_name="role3") == [o2]
+        with pytest.raises(CException) as exc_info:
             add_links({o1: [o3, o4]}, role_name="role3")
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "links of object 'o1' have wrong multiplicity '3': should be '1'")
+        e = exc_info.value
+        assert e.value == "links of object 'o1' have wrong multiplicity '3': should be '1'"
 
-        try:
+        with pytest.raises(CException) as exc_info:
             add_links({o1: [o3]}, role_name="role3")
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "links of object 'o1' have wrong multiplicity '2': should be '1'")
-        eq_(o1.get_linked(role_name="role3"), [o2])
+        e = exc_info.value
+        assert e.value == "links of object 'o1' have wrong multiplicity '2': should be '1'"
+        assert o1.get_linked(role_name="role3") == [o2]
 
     def test_link_source_multiplicity(self):
         self.c1.association(self.c2, "[sourceRole1] 1 -> [role1] *")
@@ -821,7 +771,7 @@ class TestObjectLinks:
         set_links({o1: o3}, role_name="role1")
         set_links({o2: o3}, role_name="role1")
 
-        eq_(o3.get_linked(role_name="sourceRole1"), [o2])
+        assert o3.get_linked(role_name="sourceRole1") == [o2]
 
     def test_add_links_source_multiplicity(self):
         self.c1.association(self.c2, "[sourceRole1] 1 -> [role1] *")
@@ -837,25 +787,23 @@ class TestObjectLinks:
         add_links({o2: o3}, role_name="role1")
         add_links({o2: o4}, role_name="role1")
 
-        eq_(o3.get_linked(role_name="sourceRole1"), [o2])
+        assert o3.get_linked(role_name="sourceRole1") == [o2]
 
         add_links({o2: o5}, role_name="role1")
-        eq_(o2.get_linked(role_name="role1"), [o3, o4, o5])
+        assert o2.get_linked(role_name="role1") == [o3, o4, o5]
 
-        try:
+        with pytest.raises(CException) as exc_info:
             add_links({o1: [o4]}, role_name="role1")
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "links of object 'o4' have wrong multiplicity '2': should be '1'")
+        e = exc_info.value
+        assert e.value == "links of object 'o4' have wrong multiplicity '2': should be '1'"
 
         add_links({o1: o6}, role_name="role2")
-        eq_(o1.get_linked(role_name="role2"), [o6])
-        try:
+        assert o1.get_linked(role_name="role2") == [o6]
+        with pytest.raises(CException) as exc_info:
             add_links({o1: [o3, o4]}, role_name="role2")
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "links of object 'o1' have wrong multiplicity '3': should be '1'")
-        eq_(o1.get_linked(role_name="role2"), [o6])
+        e = exc_info.value
+        assert e.value == "links of object 'o1' have wrong multiplicity '3': should be '1'"
+        assert o1.get_linked(role_name="role2") == [o6]
 
     def test_set_links_multiple_links_in_definition(self):
         self.c1.association(self.c2, "[sourceRole1] * -> [role1] *")
@@ -867,11 +815,11 @@ class TestObjectLinks:
         o5 = CObject(self.c2, "o5")
 
         set_links({o1: o4, o2: [o4], o5: [o1, o2, o3]})
-        eq_(o1.get_linked(), [o4, o5])
-        eq_(o2.get_linked(), [o4, o5])
-        eq_(o3.get_linked(), [o5])
-        eq_(o4.get_linked(), [o1, o2])
-        eq_(o5.get_linked(), [o1, o2, o3])
+        assert o1.get_linked() == [o4, o5]
+        assert o2.get_linked() == [o4, o5]
+        assert o3.get_linked() == [o5]
+        assert o4.get_linked() == [o1, o2]
+        assert o5.get_linked() == [o1, o2, o3]
 
     def test_add_links_multiple_links_in_definition(self):
         self.c1.association(self.c2, "[sourceRole1] * -> [role1] *")
@@ -883,48 +831,41 @@ class TestObjectLinks:
         o5 = CObject(self.c2, "o5")
 
         add_links({o1: o4, o2: [o4], o5: [o1, o2, o3]})
-        eq_(o1.get_linked(), [o4, o5])
-        eq_(o2.get_linked(), [o4, o5])
-        eq_(o3.get_linked(), [o5])
-        eq_(o4.get_linked(), [o1, o2])
-        eq_(o5.get_linked(), [o1, o2, o3])
+        assert o1.get_linked() == [o4, o5]
+        assert o2.get_linked() == [o4, o5]
+        assert o3.get_linked() == [o5]
+        assert o4.get_linked() == [o1, o2]
+        assert o5.get_linked() == [o1, o2, o3]
 
     def test_wrong_types_delete_links(self):
         self.c1.association(self.c2, name="l", multiplicity="1")
         o1 = CObject(self.c1, "o1")
         o2 = CObject(self.c2, "o2")
-        try:
+        with pytest.raises(CException) as exc_info:
             # noinspection PyTypeChecker
             delete_links(o1)
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "link definitions should be of the form " +
-                "{<link source 1>: <link target(s) 1>, ..., <link source n>: <link target(s) n>}")
-        try:
+        e = exc_info.value
+        assert e.value == "link definitions should be of the form " + "{<link source 1>: <link target(s) 1>, ..., <link source n>: <link target(s) n>}"
+        with pytest.raises(CException) as exc_info:
             delete_links({o1: self.mcl})
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "link target 'MCL' is not an object, class, or link")
-        try:
+        e = exc_info.value
+        assert e.value == "link target 'MCL' is not an object, class, or link"
+        with pytest.raises(CException) as exc_info:
             delete_links({o1: [o2, self.mcl]})
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "link target 'MCL' is not an object, class, or link")
-        try:
+        e = exc_info.value
+        assert e.value == "link target 'MCL' is not an object, class, or link"
+        with pytest.raises(CException) as exc_info:
             delete_links({o1: [o2, None]})
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "link target 'None' is not an object, class, or link")
-        try:
+        e = exc_info.value
+        assert e.value == "link target 'None' is not an object, class, or link"
+        with pytest.raises(CException) as exc_info:
             delete_links({self.mcl: o2})
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "link source 'MCL' is not an object, class, or link")
-        try:
+        e = exc_info.value
+        assert e.value == "link source 'MCL' is not an object, class, or link"
+        with pytest.raises(CException) as exc_info:
             delete_links({None: o2})
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "link should not contain an empty source")
+        e = exc_info.value
+        assert e.value == "link should not contain an empty source"
 
     def test_delete_one_to_one_link(self):
         self.c1.association(self.c2, "l: 1 -> [c2] 0..1")
@@ -936,23 +877,23 @@ class TestObjectLinks:
 
         links = add_links({o1: o2, o3: o4})
         o1.delete_links(o2)
-        eq_(o1.linked, [])
-        eq_(o2.linked, [])
-        eq_(o3.linked, [o4])
-        eq_(o4.linked, [o3])
-        eq_(o1.links, [])
-        eq_(o2.links, [])
-        eq_(o3.links, [links[1]])
-        eq_(o4.links, [links[1]])
+        assert o1.linked == []
+        assert o2.linked == []
+        assert o3.linked == [o4]
+        assert o4.linked == [o3]
+        assert o1.links == []
+        assert o2.links == []
+        assert o3.links == [links[1]]
+        assert o4.links == [links[1]]
         delete_links({o3: o4})
-        eq_(o1.linked, [])
-        eq_(o2.linked, [])
-        eq_(o3.linked, [])
-        eq_(o4.linked, [])
-        eq_(o1.links, [])
-        eq_(o2.links, [])
-        eq_(o3.links, [])
-        eq_(o4.links, [])
+        assert o1.linked == []
+        assert o2.linked == []
+        assert o3.linked == []
+        assert o4.linked == []
+        assert o1.links == []
+        assert o2.links == []
+        assert o3.links == []
+        assert o4.links == []
 
     def test_delete_one_to_one_link_wrong_multiplicity(self):
         self.c1.association(self.c2, "l: 1 -> [c2] 1")
@@ -960,13 +901,12 @@ class TestObjectLinks:
         o1 = CObject(self.c1, "o1")
         o2 = CObject(self.c2, "o2")
         add_links({o1: o2})
-        try:
+        with pytest.raises(CException) as exc_info:
             o1.delete_links(o2)
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "links of object 'o1' have wrong multiplicity '0': should be '1'")
-        eq_(o1.linked, [o2])
-        eq_(o2.linked, [o1])
+        e = exc_info.value
+        assert e.value == "links of object 'o1' have wrong multiplicity '0': should be '1'"
+        assert o1.linked == [o2]
+        assert o2.linked == [o1]
 
     def test_delete_one_to_n_links(self):
         self.c1.association(self.c2, "l: 0..1 -> *")
@@ -979,20 +919,20 @@ class TestObjectLinks:
 
         add_links({o1: [o3, o4], o2: [o5]})
         o4.delete_links([o1])
-        eq_(o1.linked, [o3])
-        eq_(o2.linked, [o5])
-        eq_(o3.linked, [o1])
-        eq_(o4.linked, [])
-        eq_(o5.linked, [o2])
+        assert o1.linked == [o3]
+        assert o2.linked == [o5]
+        assert o3.linked == [o1]
+        assert o4.linked == []
+        assert o5.linked == [o2]
 
         o4.add_links([o2])
-        eq_(o2.linked, [o5, o4])
+        assert o2.linked == [o5, o4]
         delete_links({o1: o3, o2: o2.linked})
-        eq_(o1.linked, [])
-        eq_(o2.linked, [])
-        eq_(o3.linked, [])
-        eq_(o4.linked, [])
-        eq_(o5.linked, [])
+        assert o1.linked == []
+        assert o2.linked == []
+        assert o3.linked == []
+        assert o4.linked == []
+        assert o5.linked == []
 
     def test_delete_one_to_n_links_wrong_multiplicity(self):
         self.c1.association(self.c2, "l: 1 -> *")
@@ -1005,11 +945,10 @@ class TestObjectLinks:
 
         add_links({o1: [o3, o4], o2: [o5]})
 
-        try:
+        with pytest.raises(CException) as exc_info:
             o4.delete_links([o1])
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "links of object 'o4' have wrong multiplicity '0': should be '1'")
+        e = exc_info.value
+        assert e.value == "links of object 'o4' have wrong multiplicity '0': should be '1'"
 
     def test_delete_n_to_n_links(self):
         self.c1.association(self.c2, "l: * -> *")
@@ -1023,20 +962,20 @@ class TestObjectLinks:
 
         add_links({o1: [o3, o4], o2: [o4, o5]})
         o4.delete_links([o1, o2])
-        eq_(o1.linked, [o3])
-        eq_(o2.linked, [o5])
-        eq_(o3.linked, [o1])
-        eq_(o4.linked, [])
-        eq_(o5.linked, [o2])
+        assert o1.linked == [o3]
+        assert o2.linked == [o5]
+        assert o3.linked == [o1]
+        assert o4.linked == []
+        assert o5.linked == [o2]
 
         add_links({o4: [o1, o2], o6: [o2, o1]})
         delete_links({o1: o6, o2: [o4, o5]})
-        eq_(o1.linked, [o3, o4])
-        eq_(o2.linked, [o6])
-        eq_(o3.linked, [o1])
-        eq_(o4.linked, [o1])
-        eq_(o5.linked, [])
-        eq_(o6.linked, [o2])
+        assert o1.linked == [o3, o4]
+        assert o2.linked == [o6]
+        assert o3.linked == [o1]
+        assert o4.linked == [o1]
+        assert o5.linked == []
+        assert o6.linked == [o2]
 
     def test_delete_link_no_matching_link(self):
         a = self.c1.association(self.c2, "l: 0..1 -> *")
@@ -1049,24 +988,21 @@ class TestObjectLinks:
 
         add_links({o1: [o3, o4], o2: [o5]}, association=a)
 
-        try:
+        with pytest.raises(CException) as exc_info:
             delete_links({o1: o5})
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "no link found for 'o1 -> o5' in delete links")
+        e = exc_info.value
+        assert e.value == "no link found for 'o1 -> o5' in delete links"
 
         b = self.c1.association(self.c2, "l: 0..1 -> *")
-        try:
+        with pytest.raises(CException) as exc_info:
             delete_links({o1: o5})
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "no link found for 'o1 -> o5' in delete links")
+        e = exc_info.value
+        assert e.value == "no link found for 'o1 -> o5' in delete links"
 
-        try:
+        with pytest.raises(CException) as exc_info:
             o4.delete_links([o1], association=b)
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "no link found for 'o4 -> o1' in delete links for given association")
+        e = exc_info.value
+        assert e.value == "no link found for 'o4 -> o1' in delete links for given association"
 
     def test_delete_link_select_by_association(self):
         a = self.c1.association(self.c2, "a: * -> *")
@@ -1079,44 +1015,42 @@ class TestObjectLinks:
 
         add_links({o1: [o3], o2: [o3, o4]}, association=b)
         delete_links({o2: o3})
-        eq_(o1.linked, [o3])
-        eq_(o2.linked, [o4])
-        eq_(o3.linked, [o1])
-        eq_(o4.linked, [o2])
+        assert o1.linked == [o3]
+        assert o2.linked == [o4]
+        assert o3.linked == [o1]
+        assert o4.linked == [o2]
         add_links({o1: [o3], o2: [o3, o4]}, association=a)
 
-        try:
+        with pytest.raises(CException) as exc_info:
             delete_links({o1: o3})
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "link definition in delete links ambiguous for link 'o1->o3': found multiple matches")
+        e = exc_info.value
+        assert e.value == "link definition in delete links ambiguous for link 'o1->o3': found multiple matches"
 
         delete_links({o1: o3, o2: o4}, association=b)
-        eq_(o1.linked, [o3])
-        eq_(o2.linked, [o3, o4])
-        eq_(o3.linked, [o1, o2])
-        eq_(o4.linked, [o2])
+        assert o1.linked == [o3]
+        assert o2.linked == [o3, o4]
+        assert o3.linked == [o1, o2]
+        assert o4.linked == [o2]
         for o in [o1, o2, o3, o4]:
             for lo in o.links:
-                eq_(lo.association, a)
+                assert lo.association == a
 
         o1.add_links(o3, association=b)
-        try:
+        with pytest.raises(CException) as exc_info:
             o1.delete_links(o3)
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "link definition in delete links ambiguous for link 'o1->o3': found multiple matches")
+        e = exc_info.value
+        assert e.value == "link definition in delete links ambiguous for link 'o1->o3': found multiple matches"
 
-        eq_(o1.linked, [o3, o3])
-        eq_(o2.linked, [o3, o4])
-        eq_(o3.linked, [o1, o2, o1])
-        eq_(o4.linked, [o2])
+        assert o1.linked == [o3, o3]
+        assert o2.linked == [o3, o4]
+        assert o3.linked == [o1, o2, o1]
+        assert o4.linked == [o2]
 
         o1.delete_links(o3, association=a)
-        eq_(o1.linked, [o3])
-        eq_(o2.linked, [o3, o4])
-        eq_(o3.linked, [o2, o1])
-        eq_(o4.linked, [o2])
+        assert o1.linked == [o3]
+        assert o2.linked == [o3, o4]
+        assert o3.linked == [o2, o1]
+        assert o4.linked == [o2]
 
     def test_delete_link_select_by_role_name(self):
         a = self.c1.association(self.c2, "a: [sourceA] * -> [targetA] *")
@@ -1129,66 +1063,61 @@ class TestObjectLinks:
 
         add_links({o1: [o3], o2: [o3, o4]}, role_name="targetB")
         delete_links({o2: o3})
-        eq_(o1.linked, [o3])
-        eq_(o2.linked, [o4])
-        eq_(o3.linked, [o1])
-        eq_(o4.linked, [o2])
+        assert o1.linked == [o3]
+        assert o2.linked == [o4]
+        assert o3.linked == [o1]
+        assert o4.linked == [o2]
         add_links({o1: [o3], o2: [o3, o4]}, role_name="targetA")
 
         delete_links({o1: o3, o2: o4}, role_name="targetB")
-        eq_(o1.linked, [o3])
-        eq_(o2.linked, [o3, o4])
-        eq_(o3.linked, [o1, o2])
-        eq_(o4.linked, [o2])
+        assert o1.linked == [o3]
+        assert o2.linked == [o3, o4]
+        assert o3.linked == [o1, o2]
+        assert o4.linked == [o2]
         for o in [o1, o2, o3, o4]:
             for lo in o.links:
-                eq_(lo.association, a)
+                assert lo.association == a
 
         add_links({o1: [o3], o2: [o3, o4]}, role_name="targetB")
         o3.delete_links([o1, o2], role_name="sourceB")
         delete_links({o4: o2}, role_name="sourceB")
 
-        eq_(o1.linked, [o3])
-        eq_(o2.linked, [o3, o4])
-        eq_(o3.linked, [o1, o2])
-        eq_(o4.linked, [o2])
+        assert o1.linked == [o3]
+        assert o2.linked == [o3, o4]
+        assert o3.linked == [o1, o2]
+        assert o4.linked == [o2]
         for o in [o1, o2, o3, o4]:
             for lo in o.links:
-                eq_(lo.association, a)
+                assert lo.association == a
 
     def test_delete_links_wrong_role_name(self):
         self.c1.association(self.c2, "a: [sourceA] * -> [targetA] *")
         o1 = CObject(self.c1, "o1")
         o2 = CObject(self.c2, "o2")
         o1.add_links(o2)
-        try:
+        with pytest.raises(CException) as exc_info:
             o1.delete_links(o2, role_name="target")
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "no link found for 'o1 -> o2' in delete links for given role name 'target'")
+        e = exc_info.value
+        assert e.value == "no link found for 'o1 -> o2' in delete links for given role name 'target'"
 
     def test_delete_links_wrong_association(self):
         self.c1.association(self.c2, "a: [sourceA] * -> [targetA] *")
         o1 = CObject(self.c1, "o1")
         o2 = CObject(self.c2, "o2")
         o1.add_links(o2)
-        try:
+        with pytest.raises(CException) as exc_info:
             o1.delete_links(o2, association=o1)
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "'o1' is not a association")
+        e = exc_info.value
+        assert e.value == "'o1' is not a association"
         b = self.c1.association(self.c2, "b: [sourceB] * -> [targetB] *")
-        try:
+        with pytest.raises(CException) as exc_info:
             o1.delete_links(o2, association=b)
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "no link found for 'o1 -> o2' in delete links for given association")
-        try:
+        e = exc_info.value
+        assert e.value == "no link found for 'o1 -> o2' in delete links for given association"
+        with pytest.raises(CException) as exc_info:
             o1.delete_links(o2, association=b, role_name="x")
-            exception_expected_()
-        except CException as e:
-            eq_(e.value,
-                "no link found for 'o1 -> o2' in delete links for given role name 'x' and for given association")
+        e = exc_info.value
+        assert e.value == "no link found for 'o1 -> o2' in delete links for given role name 'x' and for given association"
 
     def test_link_label_none_default(self):
         a1 = self.c1.association(self.c2, name="a1", multiplicity="*")
@@ -1201,9 +1130,9 @@ class TestObjectLinks:
         l1 = set_links({o1: o2}, association=a1)
         l2 = set_links({o1: [o2, o3]}, association=a2)
 
-        eq_(l1[0].label, None)
-        eq_(l2[0].label, None)
-        eq_(l2[1].label, None)
+        assert l1[0].label == None
+        assert l2[0].label == None
+        assert l2[1].label == None
 
     def test_link_label_get_set(self):
         a1 = self.c1.association(self.c2, name="a1", multiplicity="*")
@@ -1216,16 +1145,16 @@ class TestObjectLinks:
         l1 = set_links({o1: o2}, association=a1, label="l1")
         l2 = add_links({o1: [o2, o3]}, association=a2, label="l2")
 
-        eq_(l1[0].label, "l1")
-        eq_(l2[0].label, "l2")
-        eq_(l2[1].label, "l2")
+        assert l1[0].label == "l1"
+        assert l2[0].label == "l2"
+        assert l2[1].label == "l2"
 
         l2[1].label = "l3"
-        eq_(l2[0].label, "l2")
-        eq_(l2[1].label, "l3")
+        assert l2[0].label == "l2"
+        assert l2[1].label == "l3"
 
         l3 = o1.add_links(o3, association=a1, label="x1")
-        eq_(l3[0].label, "x1")
+        assert l3[0].label == "x1"
 
     def test_add_links_with_inherited_common_classifiers(self):
         mcl = CMetaclass("MCL")
@@ -1242,8 +1171,6 @@ class TestObjectLinks:
         obj_b2 = CObject(sub_b2, "b2")
 
         add_links({obj_a: [obj_b1, obj_b2]}, role_name="b")
-        eq_(set(obj_a.get_linked(role_name="b")), {obj_b1, obj_b2})
+        assert set(obj_a.get_linked(role_name="b")) == {obj_b1, obj_b2}
 
 
-if __name__ == "__main__":
-    nose.main()

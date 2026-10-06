@@ -1,79 +1,76 @@
-import nose
-from nose.tools import ok_, eq_
 
+import pytest
 from codeable_models import CBundle, CMetaclass, CClass, CObject, CAttribute, CException, CEnum
-from tests.testing_commons import exception_expected_
 
 
 class TestBundlesOfEnums:
-    def setup(self):
+    def setup_method(self):
         self.mcl = CMetaclass("MCL")
         self.b1 = CBundle("B1")
         self.b2 = CBundle("B2")
 
     def test_enum_name_fail(self):
-        try:
+        with pytest.raises(CException) as exc_info:
             # noinspection PyTypeChecker
             CEnum(self.mcl)
-            exception_expected_()
-        except CException as e:
-            ok_(e.value.startswith("is not a name string: '"))
-            ok_(e.value.endswith(" MCL'"))
+        e = exc_info.value
+        assert e.value.startswith("is not a name string: '")
+        assert e.value.endswith(" MCL'")
 
     def test_enum_defined_bundles(self):
-        eq_(set(self.b1.get_elements()), set())
+        assert set(self.b1.get_elements()) == set()
         e1 = CEnum("E1", values=["A", "B", "C"], bundles=self.b1)
-        eq_(set(self.b1.get_elements()), {e1})
+        assert set(self.b1.get_elements()) == {e1}
         e2 = CEnum("E2", values=["A", "B", "C"], bundles=[self.b1])
         e3 = CEnum("E3", values=["A", "B", "C"], bundles=[self.b1, self.b2])
         mcl = CMetaclass("MCL", bundles=self.b1)
-        eq_(set(self.b1.get_elements(type=CEnum)), {e1, e2, e3})
-        eq_(set(self.b1.elements), {e1, e2, e3, mcl})
-        eq_(set(self.b2.get_elements(type=CEnum)), {e3})
-        eq_(set(self.b2.elements), {e3})
+        assert set(self.b1.get_elements(type=CEnum)) == {e1, e2, e3}
+        assert set(self.b1.elements) == {e1, e2, e3, mcl}
+        assert set(self.b2.get_elements(type=CEnum)) == {e3}
+        assert set(self.b2.elements) == {e3}
 
     def test_bundle_defined_enums(self):
         e1 = CEnum("E1", values=["A", "B", "C"])
         e2 = CEnum("E2", values=["A", "B", "C"])
         e3 = CEnum("E3", values=["A", "B", "C"])
-        eq_(set(self.b1.get_elements(type=CEnum)), set())
+        assert set(self.b1.get_elements(type=CEnum)) == set()
         b1 = CBundle("B1", elements=[e1, e2, e3])
-        eq_(set(b1.elements), {e1, e2, e3})
+        assert set(b1.elements) == {e1, e2, e3}
         self.mcl.bundles = b1
-        eq_(set(b1.elements), {e1, e2, e3, self.mcl})
-        eq_(set(b1.get_elements(type=CEnum)), {e1, e2, e3})
+        assert set(b1.elements) == {e1, e2, e3, self.mcl}
+        assert set(b1.get_elements(type=CEnum)) == {e1, e2, e3}
         b2 = CBundle("B2")
         b2.elements = [e2, e3]
-        eq_(set(b2.get_elements(type=CEnum)), {e2, e3})
-        eq_(set(e1.bundles), {b1})
-        eq_(set(e2.bundles), {b1, b2})
-        eq_(set(e3.bundles), {b1, b2})
+        assert set(b2.get_elements(type=CEnum)) == {e2, e3}
+        assert set(e1.bundles) == {b1}
+        assert set(e2.bundles) == {b1, b2}
+        assert set(e3.bundles) == {b1, b2}
 
     def test_get_enums_by_name(self):
-        eq_(set(self.b1.get_elements(type=CEnum, name="E1")), set())
+        assert set(self.b1.get_elements(type=CEnum, name="E1")) == set()
         e1 = CEnum("E1", bundles=self.b1)
         m = CMetaclass("E1", bundles=self.b1)
-        eq_(self.b1.get_elements(type=CMetaclass), [m])
-        eq_(set(self.b1.get_elements(type=CEnum, name="E1")), {e1})
+        assert self.b1.get_elements(type=CMetaclass) == [m]
+        assert set(self.b1.get_elements(type=CEnum, name="E1")) == {e1}
         e2 = CEnum("E1", bundles=self.b1)
-        eq_(set(self.b1.get_elements(type=CEnum, name="E1")), {e1, e2})
-        ok_(e1 != e2)
+        assert set(self.b1.get_elements(type=CEnum, name="E1")) == {e1, e2}
+        assert e1 != e2
         e3 = CEnum("E1", bundles=self.b1)
-        eq_(set(self.b1.get_elements(type=CEnum, name="E1")), {e1, e2, e3})
-        eq_(self.b1.get_element(type=CEnum, name="E1"), e1)
+        assert set(self.b1.get_elements(type=CEnum, name="E1")) == {e1, e2, e3}
+        assert self.b1.get_element(type=CEnum, name="E1") == e1
 
     def test_get_enum_elements_by_name(self):
-        eq_(set(self.b1.get_elements(name="E1")), set())
+        assert set(self.b1.get_elements(name="E1")) == set()
         e1 = CEnum("E1", bundles=self.b1)
-        eq_(set(self.b1.get_elements(name="E1")), {e1})
+        assert set(self.b1.get_elements(name="E1")) == {e1}
         m = CMetaclass("E1", bundles=self.b1)
-        eq_(set(self.b1.get_elements(name="E1")), {m, e1})
+        assert set(self.b1.get_elements(name="E1")) == {m, e1}
         e2 = CEnum("E1", bundles=self.b1)
-        eq_(set(self.b1.get_elements(name="E1")), {m, e1, e2})
-        ok_(e1 != e2)
+        assert set(self.b1.get_elements(name="E1")) == {m, e1, e2}
+        assert e1 != e2
         e3 = CEnum("E1", bundles=self.b1)
-        eq_(set(self.b1.get_elements(name="E1")), {m, e1, e2, e3})
-        eq_(self.b1.get_element(name="E1"), e1)
+        assert set(self.b1.get_elements(name="E1")) == {m, e1, e2, e3}
+        assert self.b1.get_element(name="E1") == e1
 
     def test_enum_defined_bundle_change(self):
         e1 = CEnum("E1", bundles=self.b1)
@@ -84,24 +81,24 @@ class TestBundlesOfEnums:
         e2.bundles = b
         e3.bundles = None
         self.mcl.bundles = b
-        eq_(set(self.b1.elements), {mcl, e1})
-        eq_(set(self.b1.get_elements(type=CEnum)), {e1})
-        eq_(set(b.elements), {e2, self.mcl})
-        eq_(set(b.get_elements(type=CEnum)), {e2})
-        eq_(e1.bundles, [self.b1])
-        eq_(e2.bundles, [b])
-        eq_(e3.bundles, [])
+        assert set(self.b1.elements) == {mcl, e1}
+        assert set(self.b1.get_elements(type=CEnum)) == {e1}
+        assert set(b.elements) == {e2, self.mcl}
+        assert set(b.get_elements(type=CEnum)) == {e2}
+        assert e1.bundles == [self.b1]
+        assert e2.bundles == [b]
+        assert e3.bundles == []
 
     def test_bundle_delete_enum(self):
         e1 = CEnum("E1", bundles=self.b1)
         e2 = CEnum("E2", bundles=self.b1)
         e3 = CEnum("E3", bundles=self.b1)
         self.b1.delete()
-        eq_(set(self.b1.elements), set())
-        eq_(e1.bundles, [])
-        eq_(e1.name, "E1")
-        eq_(e2.bundles, [])
-        eq_(e3.bundles, [])
+        assert set(self.b1.elements) == set()
+        assert e1.bundles == []
+        assert e1.name == "E1"
+        assert e2.bundles == []
+        assert e3.bundles == []
 
     def test_creation_of_unnamed_enum_in_bundle(self):
         e1 = CEnum()
@@ -109,63 +106,58 @@ class TestBundlesOfEnums:
         e3 = CEnum("x")
         mcl = CMetaclass()
         self.b1.elements = [e1, e2, e3, mcl]
-        eq_(set(self.b1.get_elements(type=CEnum)), {e1, e2, e3})
-        eq_(self.b1.get_element(type=CEnum, name=None), e1)
-        eq_(set(self.b1.get_elements(type=CEnum, name=None)), {e1, e2})
-        eq_(set(self.b1.get_elements(name=None)), {e1, e2, mcl})
+        assert set(self.b1.get_elements(type=CEnum)) == {e1, e2, e3}
+        assert self.b1.get_element(type=CEnum, name=None) == e1
+        assert set(self.b1.get_elements(type=CEnum, name=None)) == {e1, e2}
+        assert set(self.b1.get_elements(name=None)) == {e1, e2, mcl}
 
     def test_remove_enum_from_bundle(self):
         b1 = CBundle("B1")
         b2 = CBundle("B2")
         e1 = CEnum("E1", bundles=b1)
-        try:
+        with pytest.raises(CException) as exc_info:
             # noinspection PyTypeChecker
             b1.remove(None)
-            exception_expected_()
-        except CException as e:
-            eq_("'None' is not an element of the bundle", e.value)
-        try:
+        e = exc_info.value
+        assert "'None' is not an element of the bundle" == e.value
+        with pytest.raises(CException) as exc_info:
             b1.remove(CEnum("A"))
-            exception_expected_()
-        except CException as e:
-            eq_("'A' is not an element of the bundle", e.value)
-        try:
+        e = exc_info.value
+        assert "'A' is not an element of the bundle" == e.value
+        with pytest.raises(CException) as exc_info:
             b2.remove(e1)
-            exception_expected_()
-        except CException as e:
-            eq_("'E1' is not an element of the bundle", e.value)
+        e = exc_info.value
+        assert "'E1' is not an element of the bundle" == e.value
         b1.remove(e1)
-        eq_(set(b1.get_elements(type=CEnum)), set())
+        assert set(b1.get_elements(type=CEnum)) == set()
 
         e1 = CEnum("E1", bundles=b1)
         e2 = CEnum("E2", bundles=b1)
         e3 = CEnum("E3", values=["1", "2"], bundles=b1)
 
         b1.remove(e1)
-        try:
+        with pytest.raises(CException) as exc_info:
             b1.remove(CEnum("E2", bundles=b2))
-            exception_expected_()
-        except CException as e:
-            eq_("'E2' is not an element of the bundle", e.value)
-        try:
+        e = exc_info.value
+        assert "'E2' is not an element of the bundle" == e.value
+        with pytest.raises(CException) as exc_info:
             b1.remove(e1)
-            exception_expected_()
-        except CException as e:
-            eq_("'E1' is not an element of the bundle", e.value)
+        e = exc_info.value
+        assert "'E1' is not an element of the bundle" == e.value
 
-        eq_(set(b1.get_elements(type=CEnum)), {e2, e3})
+        assert set(b1.get_elements(type=CEnum)) == {e2, e3}
         b1.remove(e3)
-        eq_(set(b1.get_elements(type=CEnum)), {e2})
+        assert set(b1.get_elements(type=CEnum)) == {e2}
 
-        eq_(e3.name, "E3")
-        eq_(e3.bundles, [])
-        eq_(e3.values, ["1", "2"])
+        assert e3.name == "E3"
+        assert e3.bundles == []
+        assert e3.values == ["1", "2"]
 
     def test_delete_enum_from_bundle(self):
         b1 = CBundle("B1")
         e1 = CEnum("E1", bundles=b1)
         e1.delete()
-        eq_(set(b1.get_elements(type=CEnum)), set())
+        assert set(b1.get_elements(type=CEnum)) == set()
 
         e1 = CEnum("E1", bundles=b1)
         e2 = CEnum("E2", bundles=b1)
@@ -176,69 +168,62 @@ class TestBundlesOfEnums:
         o = CObject(cl, "o")
 
         e1.delete()
-        eq_(set(b1.get_elements(type=CEnum)), {e2, e3})
+        assert set(b1.get_elements(type=CEnum)) == {e2, e3}
         e3.delete()
-        eq_(set(b1.get_elements(type=CEnum)), {e2})
+        assert set(b1.get_elements(type=CEnum)) == {e2}
 
-        eq_(e3.name, None)
-        eq_(e3.bundles, [])
-        eq_(e3.values, [])
-        eq_(set(cl.attributes), {ea1, ea2})
-        try:
+        assert e3.name == None
+        assert e3.bundles == []
+        assert e3.values == []
+        assert set(cl.attributes) == {ea1, ea2}
+        with pytest.raises(CException) as exc_info:
             # we just use list here, in order to not get a warning that ea1.default has no effect
             list([ea1.default])
-            exception_expected_()
-        except CException as e:
-            eq_("cannot access named element that has been deleted", e.value)
-        try:
+        e = exc_info.value
+        assert "cannot access named element that has been deleted" == e.value
+        with pytest.raises(CException) as exc_info:
             # we just use list here, in order to not get a warning that ea1.type has no effect
             list([ea1.type])
-            exception_expected_()
-        except CException as e:
-            eq_("cannot access named element that has been deleted", e.value)
-        try:
+        e = exc_info.value
+        assert "cannot access named element that has been deleted" == e.value
+        with pytest.raises(CException) as exc_info:
             ea1.default = "3"
-            exception_expected_()
-        except CException as e:
-            eq_("cannot access named element that has been deleted", e.value)
-        try:
+        e = exc_info.value
+        assert "cannot access named element that has been deleted" == e.value
+        with pytest.raises(CException) as exc_info:
             ea1.type = e1
-            exception_expected_()
-        except CException as e:
-            eq_("cannot access named element that has been deleted", e.value)
-        try:
+        e = exc_info.value
+        assert "cannot access named element that has been deleted" == e.value
+        with pytest.raises(CException) as exc_info:
             ea1.type = e2
-            exception_expected_()
-        except CException as e:
-            eq_("default value '1' incompatible with attribute's type 'E2'", e.value)
-        try:
+        e = exc_info.value
+        assert "default value '1' incompatible with attribute's type 'E2'" == e.value
+        with pytest.raises(CException) as exc_info:
             o.set_value("letters1", "1")
-            exception_expected_()
-        except CException as e:
-            eq_("cannot access named element that has been deleted", e.value)
-        try:
+        e = exc_info.value
+        assert "cannot access named element that has been deleted" == e.value
+        with pytest.raises(CException) as exc_info:
             o.get_value("letters1")
-            exception_expected_()
-        except CException as e:
-            eq_("cannot access named element that has been deleted", e.value)
+        e = exc_info.value
+        assert "cannot access named element that has been deleted" == e.value
 
     def test_remove_bundle_from_two_bundles(self):
         b1 = CBundle("B1")
         b2 = CBundle("B2")
         e1 = CEnum("e1", bundles=[b1, b2])
         b1.remove(e1)
-        eq_(set(b1.get_elements(type=CEnum)), set())
-        eq_(set(b2.get_elements(type=CEnum)), {e1})
-        eq_(set(e1.bundles), {b2})
+        assert set(b1.get_elements(type=CEnum)) == set()
+        assert set(b2.get_elements(type=CEnum)) == {e1}
+        assert set(e1.bundles) == {b2}
 
     def test_delete_bundle_from_two_bundles(self):
         b1 = CBundle("B1")
         b2 = CBundle("B2")
         e1 = CEnum("e1", bundles=[b1, b2])
         b1.delete()
-        eq_(set(b1.get_elements(type=CEnum)), set())
-        eq_(set(b2.get_elements(type=CEnum)), {e1})
-        eq_(set(e1.bundles), {b2})
+        assert set(b1.get_elements(type=CEnum)) == set()
+        assert set(b2.get_elements(type=CEnum)) == {e1}
+        assert set(e1.bundles) == {b2}
 
     def test_delete_enum_having_two_bundles(self):
         b1 = CBundle("B1")
@@ -246,10 +231,10 @@ class TestBundlesOfEnums:
         e1 = CEnum("e1", bundles=[b1, b2])
         e2 = CEnum("e2", bundles=[b2])
         e1.delete()
-        eq_(set(b1.get_elements(type=CEnum)), set())
-        eq_(set(b2.get_elements(type=CEnum)), {e2})
-        eq_(set(e1.bundles), set())
-        eq_(set(e2.bundles), {b2})
+        assert set(b1.get_elements(type=CEnum)) == set()
+        assert set(b2.get_elements(type=CEnum)) == {e2}
+        assert set(e1.bundles) == set()
+        assert set(e2.bundles) == {b2}
 
     def test_delete_enum_that_is_an_attribute_type(self):
         b1 = CBundle("B1")
@@ -263,56 +248,46 @@ class TestBundlesOfEnums:
         o = CObject(cl, "o")
         e1.delete()
         e3.delete()
-        try:
+        with pytest.raises(CException) as exc_info:
             ea1.default = "3"
-            exception_expected_()
-        except CException as e:
-            eq_("cannot access named element that has been deleted", e.value)
-        try:
+        e = exc_info.value
+        assert "cannot access named element that has been deleted" == e.value
+        with pytest.raises(CException) as exc_info:
             ea1.type = e1
-            exception_expected_()
-        except CException as e:
-            eq_("cannot access named element that has been deleted", e.value)
-        try:
+        e = exc_info.value
+        assert "cannot access named element that has been deleted" == e.value
+        with pytest.raises(CException) as exc_info:
             ea1.default = "3"
-            exception_expected_()
-        except CException as e:
-            eq_("cannot access named element that has been deleted", e.value)
-        try:
+        e = exc_info.value
+        assert "cannot access named element that has been deleted" == e.value
+        with pytest.raises(CException) as exc_info:
             ea1.type = e1
-            exception_expected_()
-        except CException as e:
-            eq_("cannot access named element that has been deleted", e.value)
-        try:
+        e = exc_info.value
+        assert "cannot access named element that has been deleted" == e.value
+        with pytest.raises(CException) as exc_info:
             ea1.type = e2
-            exception_expected_()
-        except CException as e:
-            eq_("default value '1' incompatible with attribute's type 'E2'", e.value)
-        try:
+        e = exc_info.value
+        assert "default value '1' incompatible with attribute's type 'E2'" == e.value
+        with pytest.raises(CException) as exc_info:
             o.set_value("letters1", "1")
-            exception_expected_()
-        except CException as e:
-            eq_("cannot access named element that has been deleted", e.value)
-        try:
+        e = exc_info.value
+        assert "cannot access named element that has been deleted" == e.value
+        with pytest.raises(CException) as exc_info:
             o.get_value("letters1")
-            exception_expected_()
-        except CException as e:
-            eq_("cannot access named element that has been deleted", e.value)
+        e = exc_info.value
+        assert "cannot access named element that has been deleted" == e.value
 
     def test_bundle_that_is_deleted(self):
         b1 = CBundle("B1")
         b1.delete()
-        try:
+        with pytest.raises(CException) as exc_info:
             CEnum("E1", bundles=b1)
-            exception_expected_()
-        except CException as e:
-            eq_(e.value, "cannot access named element that has been deleted")
+        e = exc_info.value
+        assert e.value == "cannot access named element that has been deleted"
 
     def test_set_bundle_to_none(self):
         c = CEnum("E1", bundles=None)
-        eq_(c.bundles, [])
-        eq_(c.name, "E1")
+        assert c.bundles == []
+        assert c.name == "E1"
 
 
-if __name__ == "__main__":
-    nose.main()
