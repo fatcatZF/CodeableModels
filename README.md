@@ -50,16 +50,18 @@ from codeable_models import CMetaclass, CClass, CObject, CAttribute, CStereotype
 # Define a metaclass (the "type of a class")
 entity = CMetaclass("Entity", attributes={"name": ""})
 
-# Define a class that conforms to the metaclass
-person = CClass(entity, "Person", attributes={"age": 0})
+# Define a class that conforms to the metaclass; metaclass attributes
+# (here "name") are set as values on the class, not on its objects
+person = CClass(entity, "Person", values={"name": "Person"},
+                attributes={"name": "", "age": 0})
 
-# Instantiate an object
+# Instantiate an object (it can only use attributes defined on its class)
 alice = CObject(person, "Alice", values={"name": "Alice", "age": 30})
 print(alice.get_value("name"))  # "Alice"
 
 # Define an association
 address = CClass(entity, "Address", attributes={"street": "", "city": ""})
-person.association(address, "lives_at", multiplicity="1", source_multiplicity="*")
+person.association(address, "lives at: [resident] * -> [address] 1")
 
 # Stereotypes
 persistent = CStereotype("Persistent", attributes={"table": ""})
