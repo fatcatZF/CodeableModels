@@ -1,0 +1,29 @@
+[project]
+name = "codeable-models"
+version = "1.0.0"
+description = "A lightweight Python modeling API for metamodels, class models, and object models"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.10"
+# The core codeable_models library has zero runtime dependencies.
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pytest>=7.4",
+]
+docs = [
+    "sphinx>=7.2",
+    "sphinx-rtd-theme>=1.3",
+    "sphinx-markdown-builder>=0.6.6",
+    "sphinxcontrib-images>=0.9.4",
+]
+
+[tool.uv]
+# CodeableModels is used as a source import, not an installed package.
+package = false
+default-groups = ["dev", "docs"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
